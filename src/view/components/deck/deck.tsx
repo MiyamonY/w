@@ -8,19 +8,28 @@ import {
   PlaybackRateStep,
 } from "../../helper/playback-rate";
 import { Card } from "../card";
+import { StartDialog } from "../start-dialog";
 
 type Props = {
   group: Group;
   start: number;
   first: Word | null;
   settings: Settings;
+  favoritesCount?: number;
 };
 
 export const Deck = (props: Props) => {
-  const { group, start, first, settings } = props;
+  const { group, start, first, settings, favoritesCount } = props;
   if (!first) return <p class="text-sm text-neutral-500">単語がありません。</p>;
   return (
     <>
+      {favoritesCount !== undefined && favoritesCount > 0 && (
+        <StartDialog
+          groupId={group.id}
+          allCount={group.word_count}
+          favoritesCount={favoritesCount}
+        />
+      )}
       <div
         id="deck"
         class="relative my-6 min-h-90 touch-pan-y overflow-hidden select-none"
@@ -28,6 +37,7 @@ export const Deck = (props: Props) => {
         hx-swap="innerHTML swap:250ms"
         data-front-ms={String(settings.front_ms)}
         data-back-ms={String(settings.back_ms)}
+        data-examples-on-front={String(settings.show_examples_on_front)}
       >
         <Card
           groupId={group.id}

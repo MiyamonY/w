@@ -1,6 +1,7 @@
 import type { WordWithGroups } from "../../../backend/db";
 import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
+import { FavoriteButton } from "../favorite-button";
 import { GroupTags } from "../group-tags";
 import { SpeakButton } from "../speak-button";
 
@@ -43,6 +44,7 @@ export const WordTable = (props: Props) => {
                 w.term
               )}
               <SpeakButton audioKey={w.audio_key} label="音声を再生" />
+              <FavoriteButton wordId={w.id} favorite={w.favorite} />
             </td>
             <td class={Cell}>{w.meaning}</td>
             <td class={Cell}>{w.examples.length > 0 && <Examples examples={w.examples} />}</td>

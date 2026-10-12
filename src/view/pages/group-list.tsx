@@ -31,7 +31,10 @@ export const GroupList = (props: Props) => {
                 href={`/groups/${g.id}`}
                 class="grid grid-cols-[1fr_auto] gap-1 rounded-xl bg-white p-4 pr-28 shadow-sm"
               >
-                <span class="text-lg font-semibold">{g.name}</span>
+                <span class="text-lg font-semibold">
+                  {g.kind === "favorites" && <span class="text-amber-500">★ </span>}
+                  {g.name}
+                </span>
                 <span class="text-sm text-neutral-500">{g.word_count} 語</span>
                 {g.description && (
                   <span class="col-span-full text-sm text-neutral-500">{g.description}</span>

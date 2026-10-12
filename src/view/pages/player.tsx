@@ -10,10 +10,11 @@ type Props = {
   start: number;
   first: Word | null;
   settings: Settings;
+  favoritesCount?: number;
 };
 
 export const Player = (props: Props) => {
-  const { group, start, first, settings } = props;
+  const { group, start, first, settings, favoritesCount } = props;
   return (
     <Layout title={`${group.name} - 単語帳`}>
       <PageHeader
@@ -21,7 +22,13 @@ export const Player = (props: Props) => {
         backHref="/"
         link={{ href: wordsUrl({ group: group.id }), label: "単語リスト" }}
       />
-      <Deck group={group} start={start} first={first} settings={settings} />
+      <Deck
+        group={group}
+        start={start}
+        first={first}
+        settings={settings}
+        favoritesCount={favoritesCount}
+      />
     </Layout>
   );
 };

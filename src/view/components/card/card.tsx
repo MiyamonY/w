@@ -1,7 +1,8 @@
-import type { Word } from "../../../backend/db";
+import type { CardFilter, Word } from "../../../backend/db";
 import { audioUrl } from "../../helper/audio-url";
 import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
+import { FavoriteButton } from "../favorite-button";
 import { SpeakButton } from "../speak-button";
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
   total: number;
   word: Word;
   showExamplesOnFront: boolean;
+  filter?: CardFilter;
 };
 
 const Face =
@@ -17,9 +19,11 @@ const Face =
 const FooterButton = "cursor-pointer rounded-full bg-white px-4 py-2 text-lg shadow";
 
 export const Card = (props: Props) => {
-  const { groupId, index, total, word, showExamplesOnFront } = props;
+  const { groupId, index, total, word, showExamplesOnFront, filter = "all" } = props;
   const prev = (index - 1 + total) % total;
   const next = (index + 1) % total;
+  const cardUrl = (i: number) =>
+    `/groups/${groupId}/cards/${i}${filter === "favorites" ? "?only=favorites" : ""}`;
   return (
     <article
       id="card"
@@ -53,7 +57,7 @@ export const Card = (props: Props) => {
           type="button"
           class={FooterButton}
           data-nav="prev"
-          hx-get={`/groups/${groupId}/cards/${prev}`}
+          hx-get={cardUrl(prev)}
           aria-label="前へ"
         >
           ‹
@@ -62,11 +66,12 @@ export const Card = (props: Props) => {
           {index + 1} / {total}
         </span>
         <SpeakButton audioKey={word.audio_key} label="音声を再生" class={FooterButton} />
+        <FavoriteButton wordId={word.id} favorite={word.favorite} variant="footer" />
         <button
           type="button"
           class={FooterButton}
           data-nav="next"
-          hx-get={`/groups/${groupId}/cards/${next}`}
+          hx-get={cardUrl(next)}
           aria-label="次へ"
         >
           ›

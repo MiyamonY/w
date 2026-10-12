@@ -18,6 +18,8 @@ const PagingQuerySchema = z.object({
 
 export const StartIndexSchema = z.coerce.number().int().min(0).catch(0);
 
+export const CardFilterSchema = z.enum(["all", "favorites"]).catch("all");
+
 export const GroupFilterSchema = z.coerce.number().int().positive().optional().catch(undefined);
 
 export const resolvePaging = (query: Record<string, string>, total: number): Paging => {

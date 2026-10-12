@@ -1,3 +1,4 @@
+import htmx from "htmx.org";
 import {
   currentPlaybackRate,
   playOne,
@@ -30,6 +31,10 @@ const go = (dir: Dir) => {
 const setupDeck = (deck: HTMLElement) => {
   const frontMs = Number(deck.dataset.frontMs);
   const backMs = Number(deck.dataset.backMs);
+  const examplesOnFront = deck.dataset.examplesOnFront === "true";
+  const frontAudios = (c: HTMLElement) =>
+    examplesOnFront ? [...wordAudio(c), ...exampleAudios(c)] : wordAudio(c);
+  const backAudios = (c: HTMLElement) => (examplesOnFront ? [] : exampleAudios(c));
   const toggleBtn = document.getElementById("toggle-play");
   const autoAudio = document.getElementById("auto-audio") as HTMLInputElement | null;
   let playing = false;
@@ -71,11 +76,11 @@ const setupDeck = (deck: HTMLElement) => {
     if (!playing || !c) return;
     const withAudio = autoAudioOn();
     if (!c.classList.contains("flipped")) {
-      await Promise.all([sleep(frontMs), withAudio && playQueue(wordAudio(c), my)]);
+      await Promise.all([sleep(frontMs), withAudio && playQueue(frontAudios(c), my)]);
       if (my !== gen) return;
       flip(true);
     }
-    await Promise.all([sleep(backMs), withAudio && playQueue(exampleAudios(c), my)]);
+    await Promise.all([sleep(backMs), withAudio && playQueue(backAudios(c), my)]);
     if (my !== gen) return;
     go("next");
   };
@@ -91,7 +96,7 @@ const setupDeck = (deck: HTMLElement) => {
     stop();
     const c = card();
     if (!c || !autoAudioOn()) return;
-    playQueue(c.classList.contains("flipped") ? exampleAudios(c) : wordAudio(c), gen);
+    playQueue(c.classList.contains("flipped") ? backAudios(c) : frontAudios(c), gen);
   };
 
   const toggleFlip = () => {
@@ -102,12 +107,30 @@ const setupDeck = (deck: HTMLElement) => {
 
   toggleBtn?.addEventListener("click", () => setPlaying(!playing));
 
+  const dialog = document.getElementById("start-dialog") as HTMLDialogElement | null;
+  if (dialog) {
+    dialog.showModal();
+    dialog.addEventListener("click", (e) => {
+      const choice = closest(e.target, "[data-only]");
+      if (!choice) return;
+      dialog.close();
+      if (choice.dataset.only === "favorites" && choice.dataset.url) {
+        playing = true;
+        if (toggleBtn) toggleBtn.textContent = "⏸ 一時停止";
+        htmx.ajax("get", choice.dataset.url, { target: deck, swap: "innerHTML" });
+      } else {
+        setPlaying(true);
+      }
+    });
+  }
+
   document.body.addEventListener("htmx:beforeRequest", (e) => {
     const dir = (e as CustomEvent<{ elt: HTMLElement }>).detail.elt.dataset.nav;
     if (dir) deck.dataset.dir = dir;
   });
 
-  document.body.addEventListener("htmx:afterSettle", () => {
+  document.body.addEventListener("htmx:afterSettle", (e) => {
+    if (e.target !== deck) return;
     if (playing) run();
     else playCurrentFace();
   });
@@ -126,6 +149,7 @@ const setupDeck = (deck: HTMLElement) => {
   });
 
   document.addEventListener("keydown", (e) => {
+    if (dialog?.open) return;
     if (closest(e.target, "input, select, textarea")) return;
     if (closest(e.target, "button, a") && (e.key === " " || e.key === "Enter")) return;
     if (e.key === "ArrowRight") go("next");

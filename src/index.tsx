@@ -1,18 +1,27 @@
 import { type Context, Hono } from "hono";
 import { csrf } from "hono/csrf";
+import { z } from "zod";
 import {
+  countGroupFavorites,
   countWords,
   getGroup,
   getWordAt,
   listAllWords,
   listGroups,
   listGroupWords,
+  toggleFavorite,
 } from "./backend/db";
 import { serveAudio } from "./backend/audio";
 import { requireAccess } from "./backend/auth";
-import { GroupFilterSchema, resolvePaging, StartIndexSchema } from "./backend/paging";
+import {
+  CardFilterSchema,
+  GroupFilterSchema,
+  resolvePaging,
+  StartIndexSchema,
+} from "./backend/paging";
 import { getSettings, SettingsSchema, updateSettings } from "./backend/settings";
 import { Card } from "./view/components/card";
+import { FavoriteButton, FavoriteButtonVariants } from "./view/components/favorite-button";
 import { PagedWordTable } from "./view/components/paged-word-table";
 import { SettingsForm } from "./view/components/settings-form";
 import { AllWordList } from "./view/pages/all-word-list";
@@ -62,11 +71,21 @@ app.get("/groups/:id{[0-9]+}", async (c) => {
   if (!group) return c.notFound();
   const requested = StartIndexSchema.parse(c.req.query("start"));
   const start = group.word_count > 0 ? requested % group.word_count : 0;
-  const [first, settings] = await Promise.all([
+  const askFilter = c.req.query("start") === undefined && group.kind !== "favorites";
+  const [first, settings, favoritesCount] = await Promise.all([
     group.word_count > 0 ? getWordAt(c.env.DB, id, start) : null,
     getSettings(c.env.DB),
+    askFilter ? countGroupFavorites(c.env.DB, id) : undefined,
   ]);
-  return c.html(<Player group={group} start={start} first={first} settings={settings} />);
+  return c.html(
+    <Player
+      group={group}
+      start={start}
+      first={first}
+      settings={settings}
+      favoritesCount={favoritesCount}
+    />,
+  );
 });
 
 app.get("/groups/:id{[0-9]+}/words", (c) =>
@@ -76,10 +95,13 @@ app.get("/groups/:id{[0-9]+}/words", (c) =>
 app.get("/groups/:id{[0-9]+}/cards/:index{[0-9]+}", async (c) => {
   const id = Number(c.req.param("id"));
   const group = await getGroup(c.env.DB, id);
-  if (!group || group.word_count === 0) return c.notFound();
-  const index = Number(c.req.param("index")) % group.word_count;
+  if (!group) return c.notFound();
+  const filter = CardFilterSchema.parse(c.req.query("only"));
+  const total = filter === "favorites" ? await countGroupFavorites(c.env.DB, id) : group.word_count;
+  if (total === 0) return c.notFound();
+  const index = Number(c.req.param("index")) % total;
   const [word, settings] = await Promise.all([
-    getWordAt(c.env.DB, id, index),
+    getWordAt(c.env.DB, id, index, filter),
     getSettings(c.env.DB),
   ]);
   if (!word) return c.notFound();
@@ -87,11 +109,19 @@ app.get("/groups/:id{[0-9]+}/cards/:index{[0-9]+}", async (c) => {
     <Card
       groupId={id}
       index={index}
-      total={group.word_count}
+      total={total}
+      filter={filter}
       word={word}
       showExamplesOnFront={settings.show_examples_on_front}
     />,
   );
+});
+
+app.post("/words/:id{[0-9]+}/favorite", async (c) => {
+  const wordId = Number(c.req.param("id"));
+  const variant = z.enum(FavoriteButtonVariants).catch("inline").parse(c.req.query("variant"));
+  const favorite = await toggleFavorite(c.env.DB, wordId);
+  return c.html(<FavoriteButton wordId={wordId} favorite={favorite} variant={variant} />);
 });
 
 app.get("/settings", async (c) => {
