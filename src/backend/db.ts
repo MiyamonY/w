@@ -21,7 +21,7 @@ export type Word = {
   examples: Example[];
 };
 
-type GroupRef = { id: number; name: string };
+export type GroupRef = { id: number; name: string };
 export type WordWithGroups = Word & { groups: GroupRef[] };
 
 export const listGroups = async (db: D1Database): Promise<Group[]> => {
@@ -109,6 +109,7 @@ export const getWordAt = async (
 export const listGroupWords = async (
   db: D1Database,
   groupId: number,
+  range: { limit: number; offset: number },
 ): Promise<WordWithGroups[]> => {
   const { results } = await db
     .prepare(
@@ -116,20 +117,26 @@ export const listGroupWords = async (
          FROM group_words gw
          JOIN words w ON w.id = gw.word_id
         WHERE gw.group_id = ?
-        ORDER BY gw.sort_order, w.id`,
+        ORDER BY gw.sort_order, w.id
+        LIMIT ? OFFSET ?`,
     )
-    .bind(groupId)
+    .bind(groupId, range.limit, range.offset)
     .all<WordWithGroupsRow>();
   return results.map(toWordWithGroups);
 };
 
-export const listAllWords = async (db: D1Database): Promise<WordWithGroups[]> => {
+export const listAllWords = async (
+  db: D1Database,
+  range: { limit: number; offset: number },
+): Promise<WordWithGroups[]> => {
   const { results } = await db
     .prepare(
       `SELECT ${WordColumns}, ${GroupsJson}
          FROM words w
-        ORDER BY w.term COLLATE NOCASE, w.id`,
+        ORDER BY w.id
+        LIMIT ? OFFSET ?`,
     )
+    .bind(range.limit, range.offset)
     .all<WordWithGroupsRow>();
   return results.map(toWordWithGroups);
 };

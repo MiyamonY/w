@@ -26,8 +26,8 @@ export const Card = (props: Props) => {
 定数（固定の数値・文字列）は PascalCase で書く: `const FrontMs = 3000;`。環境変数名（`env.ACCESS_AUD` など、`wrangler.jsonc` / `.dev.vars` で決まる名前）はそのまま使う。
 新しいコンポーネントは既存ファイルに足さず、新しいファイルを作る。
 
-- ファイル名はコンポーネント名のケバブケース: `WordRows` → `word-rows.tsx`
-- ファイル内で使うだけの小さな JSX 断片は、export しないローカル変数に留めてよい（例: `word-rows.tsx` の `body`）
+- ファイル名はコンポーネント名のケバブケース: `WordTable` → `word-table.tsx`
+- ファイル内で使うだけの小さな JSX 断片や関数は、export しないローカル変数に留めてよい（例: `pagination.tsx` の `link`）
 
 ## components はコンポーネントごとのディレクトリ
 

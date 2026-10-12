@@ -1,17 +1,19 @@
 import type { Group, WordWithGroups } from "../../backend/db";
+import type { Paging } from "../../backend/paging";
 import { Layout } from "../components/layout";
-import { WordRows } from "../components/word-rows";
+import { PagedWordTable } from "../components/paged-word-table";
 
 type Props = {
   group: Group;
   words: WordWithGroups[];
+  paging: Paging;
 };
 
 export const GroupWordList = (props: Props) => {
-  const { group, words } = props;
+  const { group, words, paging } = props;
   return (
     <Layout title={`${group.name} - 単語リスト`}>
-      <main class="container">
+      <main class="container wide">
         <header class="player-header">
           <a href="/" class="back-link">
             ← 一覧
@@ -21,8 +23,10 @@ export const GroupWordList = (props: Props) => {
             カードで見る
           </a>
         </header>
-        <WordRows
+        <PagedWordTable
           words={words}
+          paging={paging}
+          basePath={`/groups/${group.id}/words`}
           cardHref={(i) => `/groups/${group.id}?start=${i}`}
           currentGroupId={group.id}
         />
