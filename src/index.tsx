@@ -10,7 +10,7 @@ import {
 } from "./backend/db";
 import { serveAudio } from "./backend/audio";
 import { requireAccess } from "./backend/auth";
-import { getSettings, parseDisplayMs, updateSettings } from "./backend/settings";
+import { getSettings, parseBoolean, parseDisplayMs, updateSettings } from "./backend/settings";
 import { Card } from "./view/components/card";
 import { SettingsForm } from "./view/components/settings-form";
 import { AllWordList } from "./view/pages/all-word-list";
@@ -60,9 +60,20 @@ app.get("/groups/:id{[0-9]+}/cards/:index{[0-9]+}", async (c) => {
   const group = await getGroup(c.env.DB, id);
   if (!group || group.word_count === 0) return c.notFound();
   const index = Number(c.req.param("index")) % group.word_count;
-  const word = await getWordAt(c.env.DB, id, index);
+  const [word, settings] = await Promise.all([
+    getWordAt(c.env.DB, id, index),
+    getSettings(c.env.DB),
+  ]);
   if (!word) return c.notFound();
-  return c.html(<Card groupId={id} index={index} total={group.word_count} word={word} />);
+  return c.html(
+    <Card
+      groupId={id}
+      index={index}
+      total={group.word_count}
+      word={word}
+      showExamplesOnFront={settings.show_examples_on_front}
+    />,
+  );
 });
 
 app.get("/settings", async (c) => {
@@ -74,11 +85,12 @@ app.post("/settings", async (c) => {
   const body = await c.req.json<Record<string, unknown>>().catch(() => null);
   const front_ms = parseDisplayMs(body?.front_ms);
   const back_ms = parseDisplayMs(body?.back_ms);
-  if (front_ms === null || back_ms === null) {
+  const show_examples_on_front = parseBoolean(body?.show_examples_on_front);
+  if (front_ms === null || back_ms === null || show_examples_on_front === null) {
     const settings = await getSettings(c.env.DB);
     return c.html(<SettingsForm settings={settings} status="invalid" />, 422);
   }
-  const settings = { front_ms, back_ms };
+  const settings = { front_ms, back_ms, show_examples_on_front };
   await updateSettings(c.env.DB, settings);
   return c.html(<SettingsForm settings={settings} status="saved" />);
 });

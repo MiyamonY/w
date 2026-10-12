@@ -43,11 +43,19 @@ export const SettingsForm = (props: Props) => {
         自動再生で次へ進むまでの最低時間です（{MinDisplayMs}〜{MaxDisplayMs}
         ミリ秒）。音声が長い場合は再生が終わるまで待ちます。
       </p>
+      <label class="checkbox">
+        <input
+          type="checkbox"
+          name="show_examples_on_front"
+          checked={settings.show_examples_on_front}
+        />
+        <span>カードの表に例文（英語のみ）を表示する</span>
+      </label>
       <button type="submit">保存</button>
       {status === "saved" && <p class="settings-status">保存しました。</p>}
       {status === "invalid" && (
         <p class="settings-status error">
-          {MinDisplayMs}〜{MaxDisplayMs}の整数（ミリ秒）で入力してください。
+          入力内容を確認してください（表示時間は {MinDisplayMs}〜{MaxDisplayMs} の整数ミリ秒）。
         </p>
       )}
     </form>

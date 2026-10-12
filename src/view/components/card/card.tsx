@@ -8,10 +8,11 @@ type Props = {
   index: number;
   total: number;
   word: Word;
+  showExamplesOnFront: boolean;
 };
 
 export const Card = (props: Props) => {
-  const { groupId, index, total, word } = props;
+  const { groupId, index, total, word, showExamplesOnFront } = props;
   const prev = (index - 1 + total) % total;
   const next = (index + 1) % total;
   return (
@@ -19,6 +20,13 @@ export const Card = (props: Props) => {
       <div class="card-inner">
         <div class="face front">
           <div class="term">{word.term}</div>
+          {showExamplesOnFront && word.examples.length > 0 && (
+            <ul class="front-examples">
+              {word.examples.map((e) => (
+                <li>{e.sentence}</li>
+              ))}
+            </ul>
+          )}
         </div>
         <div class="face back">
           <div class="term small">{word.term}</div>

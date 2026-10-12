@@ -21,7 +21,13 @@ export const Deck = (props: Props) => {
         data-front-ms={String(settings.front_ms)}
         data-back-ms={String(settings.back_ms)}
       >
-        <Card groupId={group.id} index={start} total={group.word_count} word={first} />
+        <Card
+          groupId={group.id}
+          index={start}
+          total={group.word_count}
+          word={first}
+          showExamplesOnFront={settings.show_examples_on_front}
+        />
       </div>
       <div class="controls">
         <button id="toggle-play" type="button">
