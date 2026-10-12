@@ -1,0 +1,7 @@
+CREATE TABLE settings (
+  id       INTEGER PRIMARY KEY CHECK (id = 1),
+  front_ms INTEGER NOT NULL DEFAULT 3000,
+  back_ms  INTEGER NOT NULL DEFAULT 3000
+);
+
+INSERT INTO settings (id) VALUES (1);

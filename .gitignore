@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars*
+mise.local.toml
+
+seed.sql
+
+dist/
