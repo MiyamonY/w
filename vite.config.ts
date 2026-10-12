@@ -3,7 +3,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 const RequiredEnv = [
-  "WORKER_DOMAIN",
   "WORKER_D1_DATABASE_ID",
   "WORKER_ACCESS_TEAM_DOMAIN",
   "WORKER_ACCESS_AUD",
@@ -25,7 +24,11 @@ export default defineConfig(({ command }) => {
       cloudflare({
         config: (config) => {
           if (!isBuild) return;
-          config.routes = [{ pattern: env.WORKER_DOMAIN, custom_domain: true }];
+          if (env.WORKER_DOMAIN) {
+            config.routes = [{ pattern: env.WORKER_DOMAIN, custom_domain: true }];
+          } else {
+            config.workers_dev = true;
+          }
           for (const db of config.d1_databases) {
             if (db.binding === "DB") db.database_id = env.WORKER_D1_DATABASE_ID;
           }
@@ -43,6 +46,10 @@ export default defineConfig(({ command }) => {
         build: {
           rolldownOptions: {
             input: { app: "src/view/client.ts" },
+            onwarn: (warning, defaultHandler) => {
+              if (warning.code === "EVAL" && warning.id?.includes("/htmx.org/")) return;
+              defaultHandler(warning);
+            },
             output: {
               entryFileNames: "assets/[name].js",
               assetFileNames: "assets/[name][extname]",

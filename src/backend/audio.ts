@@ -24,10 +24,11 @@ export const serveAudio = async (
 };
 
 const resolveRange = (range: R2Range, size: number): { start: number; end: number } => {
-  if ("suffix" in range) {
-    return { start: Math.max(size - range.suffix, 0), end: size - 1 };
+  const { offset, length, suffix } = range as { offset?: number; length?: number; suffix?: number };
+  if (typeof suffix === "number") {
+    return { start: Math.max(size - suffix, 0), end: size - 1 };
   }
-  const start = range.offset ?? 0;
-  const length = range.length ?? size - start;
-  return { start, end: Math.min(start + length, size) - 1 };
+  const start = typeof offset === "number" ? offset : 0;
+  const end = typeof length === "number" ? Math.min(start + length, size) - 1 : size - 1;
+  return { start, end };
 };

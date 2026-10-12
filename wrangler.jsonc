@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "wordbook",
+  "name": "words",
   "main": "src/index.tsx",
   "compatibility_date": "2026-10-01",
   "workers_dev": false,
@@ -16,14 +16,14 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "wordbook",
+      "database_name": "words",
       "migrations_dir": "migrations",
     },
   ],
   "r2_buckets": [
     {
       "binding": "AUDIO",
-      "bucket_name": "wordbook-audio",
+      "bucket_name": "words-audio",
     },
   ],
 }
