@@ -1,9 +1,9 @@
-export const FavoriteButtonVariants = ["inline", "footer"] as const;
+export const FavoriteButtonVariants = ["inline", "corner"] as const;
 export type FavoriteButtonVariant = (typeof FavoriteButtonVariants)[number];
 
 const VariantClass: Record<FavoriteButtonVariant, string> = {
   inline: "cursor-pointer px-1",
-  footer: "cursor-pointer rounded-full bg-white px-4 py-2 text-lg shadow",
+  corner: "absolute top-2 right-2 z-10 cursor-pointer p-2 text-2xl leading-none",
 };
 
 type Props = {

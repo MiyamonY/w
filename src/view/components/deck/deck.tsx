@@ -1,13 +1,8 @@
 import type { Group, Word } from "../../../backend/db";
 import type { Settings } from "../../../backend/settings";
-import {
-  DefaultPlaybackRate,
-  formatPlaybackRate,
-  MaxPlaybackRate,
-  MinPlaybackRate,
-  PlaybackRateStep,
-} from "../../helper/playback-rate";
+import { DefaultPlaybackRate, formatPlaybackRate, PlaybackRates } from "../../helper/playback-rate";
 import { Card } from "../card";
+import { CardPosition } from "../card-position";
 import { StartDialog } from "../start-dialog";
 
 type Props = {
@@ -47,6 +42,7 @@ export const Deck = (props: Props) => {
           showExamplesOnFront={settings.show_examples_on_front}
         />
       </div>
+      <CardPosition position={start + 1} total={group.word_count} />
       <div class="flex flex-wrap items-center justify-center gap-4">
         <button
           id="toggle-play"
@@ -56,24 +52,43 @@ export const Deck = (props: Props) => {
           ▶ スタート
         </button>
         <label class="flex items-center gap-1.5">
-          <input id="auto-audio" type="checkbox" checked /> 音声を自動再生
+          <input id="auto-audio" type="checkbox" checked /> 自動
         </label>
         <label class="flex items-center gap-1.5">
           速度
-          <input
+          <select
             id="playback-rate"
-            type="range"
-            min={String(MinPlaybackRate)}
-            max={String(MaxPlaybackRate)}
-            step={String(PlaybackRateStep)}
-            value={formatPlaybackRate(DefaultPlaybackRate)}
-            class="w-28 accent-blue-700"
-          />
-          <output id="playback-rate-value" for="playback-rate" class="w-10 tabular-nums">
-            {formatPlaybackRate(DefaultPlaybackRate)}x
-          </output>
+            class="rounded-md border border-neutral-300 bg-white p-1 tabular-nums"
+          >
+            {PlaybackRates.map((rate) => (
+              <option value={formatPlaybackRate(rate)} selected={rate === DefaultPlaybackRate}>
+                {formatPlaybackRate(rate)}x
+              </option>
+            ))}
+          </select>
         </label>
       </div>
+      <nav class="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white/95 backdrop-blur">
+        <div class="mx-auto grid max-w-140 grid-cols-2">
+          <button
+            type="button"
+            data-nav-button="prev"
+            aria-label="前のカード"
+            class="cursor-pointer py-4 text-3xl text-blue-700 active:bg-neutral-100"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            data-nav-button="next"
+            aria-label="次のカード"
+            class="cursor-pointer border-l border-neutral-200 py-4 text-3xl text-blue-700 active:bg-neutral-100"
+          >
+            ›
+          </button>
+        </div>
+      </nav>
+      <div class="h-20" aria-hidden="true" />
     </>
   );
 };

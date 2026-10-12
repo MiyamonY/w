@@ -16,12 +16,9 @@ type Props = {
 
 const Face =
   "absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white p-6 text-center shadow-lg backface-hidden transition-transform duration-400";
-const FooterButton = "cursor-pointer rounded-full bg-white px-4 py-2 text-lg shadow";
 
 export const Card = (props: Props) => {
   const { groupId, index, total, word, showExamplesOnFront, filter = "all" } = props;
-  const prev = (index - 1 + total) % total;
-  const next = (index + 1) % total;
   const cardUrl = (i: number) =>
     `/groups/${groupId}/cards/${i}${filter === "favorites" ? "?only=favorites" : ""}`;
   return (
@@ -29,15 +26,26 @@ export const Card = (props: Props) => {
       id="card"
       class="flex h-90 flex-col transition-[translate,rotate,opacity] duration-250 swap-in-next:translate-x-[110%] swap-in-next:opacity-0 swap-in-prev:-translate-x-[110%] swap-in-prev:opacity-0 swap-out-next:-translate-x-[110%] swap-out-next:-rotate-6 swap-out-next:opacity-0 swap-out-prev:translate-x-[110%] swap-out-prev:rotate-6 swap-out-prev:opacity-0"
       data-audio={audioUrl(word.audio_key)}
+      data-index={String(index)}
+      data-total={String(total)}
+      data-url-template={cardUrl(0).replace("/cards/0", "/cards/{index}")}
     >
       <div class="relative flex-1 cursor-pointer perspective-[1000px]">
+        <FavoriteButton wordId={word.id} favorite={word.favorite} variant="corner" />
         <div class={`${Face} flipped:-rotate-y-180`}>
           {word.numbers.length > 0 && (
             <div class="absolute top-3 left-4 text-xs text-neutral-400 tabular-nums">
               {formatSourceNumbers(word.numbers)}
             </div>
           )}
-          <div class="text-4xl font-bold">{word.term}</div>
+          <div class="flex items-center gap-2">
+            <div class="text-4xl font-bold">{word.term}</div>
+            <SpeakButton
+              audioKey={word.audio_key}
+              label="音声を再生"
+              class="cursor-pointer p-1 text-2xl leading-none"
+            />
+          </div>
           {showExamplesOnFront && word.examples.length > 0 && (
             <ul class="grid gap-1.5 text-neutral-600">
               {word.examples.map((e) => (
@@ -47,35 +55,17 @@ export const Card = (props: Props) => {
           )}
         </div>
         <div class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}>
-          <div class="text-xl font-medium text-neutral-500">{word.term}</div>
+          <div class="flex items-center gap-1">
+            <div class="text-xl font-medium text-neutral-500">{word.term}</div>
+            <SpeakButton
+              audioKey={word.audio_key}
+              label="音声を再生"
+              class="cursor-pointer p-1 leading-none"
+            />
+          </div>
           <div class="text-3xl font-semibold">{word.meaning}</div>
           {word.examples.length > 0 && <Examples examples={word.examples} />}
         </div>
-      </div>
-      <div class="flex items-center justify-center gap-4 pt-3">
-        <button
-          type="button"
-          class={FooterButton}
-          data-nav="prev"
-          hx-get={cardUrl(prev)}
-          aria-label="前へ"
-        >
-          ‹
-        </button>
-        <span class="min-w-16 text-center text-neutral-500">
-          {index + 1} / {total}
-        </span>
-        <SpeakButton audioKey={word.audio_key} label="音声を再生" class={FooterButton} />
-        <FavoriteButton wordId={word.id} favorite={word.favorite} variant="footer" />
-        <button
-          type="button"
-          class={FooterButton}
-          data-nav="next"
-          hx-get={cardUrl(next)}
-          aria-label="次へ"
-        >
-          ›
-        </button>
       </div>
     </article>
   );

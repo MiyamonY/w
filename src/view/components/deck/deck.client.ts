@@ -24,10 +24,6 @@ const flip = (force?: boolean) => {
   card()?.classList.toggle("flipped", force);
 };
 
-const go = (dir: Dir) => {
-  card()?.querySelector<HTMLElement>(`[data-nav="${dir}"]`)?.click();
-};
-
 const setupDeck = (deck: HTMLElement) => {
   const frontMs = Number(deck.dataset.frontMs);
   const backMs = Number(deck.dataset.backMs);
@@ -42,19 +38,12 @@ const setupDeck = (deck: HTMLElement) => {
 
   const autoAudioOn = () => autoAudio?.checked ?? false;
 
-  const rateInput = document.getElementById("playback-rate") as HTMLInputElement | null;
-  const rateValue = document.getElementById("playback-rate-value");
-  const showRate = (rate: number) => {
-    if (rateValue) rateValue.textContent = `${formatPlaybackRate(rate)}x`;
-  };
-  if (rateInput) {
-    rateInput.value = formatPlaybackRate(currentPlaybackRate());
-    showRate(currentPlaybackRate());
-    rateInput.addEventListener("input", () => {
-      const rate = parsePlaybackRate(rateInput.value);
-      setPlaybackRate(rate);
-      showRate(rate);
-    });
+  const rateSelect = document.getElementById("playback-rate") as HTMLSelectElement | null;
+  if (rateSelect) {
+    rateSelect.value = formatPlaybackRate(currentPlaybackRate());
+    rateSelect.addEventListener("change", () =>
+      setPlaybackRate(parsePlaybackRate(rateSelect.value)),
+    );
   }
 
   const playQueue = async (srcs: string[], my: number) => {
@@ -124,13 +113,77 @@ const setupDeck = (deck: HTMLElement) => {
     });
   }
 
-  document.body.addEventListener("htmx:beforeRequest", (e) => {
-    const dir = (e as CustomEvent<{ elt: HTMLElement }>).detail.elt.dataset.nav;
-    if (dir) deck.dataset.dir = dir;
+  const positionRange = document.getElementById("card-position") as HTMLInputElement | null;
+  const positionInput = document.getElementById("card-position-input") as HTMLInputElement | null;
+  const positionTotal = document.getElementById("card-position-total");
+  let draggingRange = false;
+
+  const syncPosition = () => {
+    const c = card();
+    if (!c) return;
+    const position = String(Number(c.dataset.index) + 1);
+    const total = String(c.dataset.total);
+    if (positionRange) {
+      positionRange.max = total;
+      if (!draggingRange) positionRange.value = position;
+    }
+    if (positionInput) {
+      positionInput.max = total;
+      if (document.activeElement !== positionInput) positionInput.value = position;
+    }
+    if (positionTotal) positionTotal.textContent = `/ ${total}`;
+  };
+
+  const loadCard = (index: number, dir: Dir) => {
+    const template = card()?.dataset.urlTemplate;
+    if (!template) return;
+    deck.dataset.dir = dir;
+    htmx.ajax("get", template.replace("{index}", String(index)), {
+      target: deck,
+      swap: "innerHTML swap:250ms",
+    });
+  };
+
+  const go = (dir: Dir) => {
+    const c = card();
+    if (!c) return;
+    const index = Number(c.dataset.index);
+    const total = Number(c.dataset.total);
+    loadCard(dir === "next" ? (index + 1) % total : (index - 1 + total) % total, dir);
+  };
+
+  for (const button of document.querySelectorAll<HTMLElement>("[data-nav-button]")) {
+    button.addEventListener("click", () =>
+      go(button.dataset.navButton === "prev" ? "prev" : "next"),
+    );
+  }
+
+  const jumpTo = (position: number) => {
+    const c = card();
+    if (!c || !Number.isFinite(position)) return syncPosition();
+    const current = Number(c.dataset.index);
+    const index = Math.min(Math.max(Math.round(position), 1), Number(c.dataset.total)) - 1;
+    if (index === current) return syncPosition();
+    loadCard(index, index > current ? "next" : "prev");
+  };
+
+  positionRange?.addEventListener("input", () => {
+    draggingRange = true;
+    if (positionInput) positionInput.value = positionRange.value;
   });
+  positionRange?.addEventListener("change", () => {
+    draggingRange = false;
+    jumpTo(Number(positionRange.value));
+  });
+  positionInput?.addEventListener("change", () => {
+    positionInput.blur();
+    jumpTo(Number(positionInput.value));
+  });
+  syncPosition();
 
   document.body.addEventListener("htmx:afterSettle", (e) => {
     if (e.target !== deck) return;
+    syncPosition();
     if (playing) run();
     else playCurrentFace();
   });

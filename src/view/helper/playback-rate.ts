@@ -4,6 +4,11 @@ export const PlaybackRateStep = 0.1;
 export const DefaultPlaybackRate = 1;
 export const PlaybackRateStorageKey = "playbackRate";
 
+export const PlaybackRates = Array.from(
+  { length: Math.round((MaxPlaybackRate - MinPlaybackRate) / PlaybackRateStep) + 1 },
+  (_, i) => Number((MinPlaybackRate + i * PlaybackRateStep).toFixed(1)),
+);
+
 export const formatPlaybackRate = (rate: number) => rate.toFixed(1);
 
 export const parsePlaybackRate = (value: string | null | undefined) => {

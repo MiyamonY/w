@@ -1,0 +1,33 @@
+type Props = {
+  position: number;
+  total: number;
+};
+
+export const CardPosition = (props: Props) => {
+  const { position, total } = props;
+  return (
+    <div class="-mt-3 mb-6 flex items-center gap-3 text-sm">
+      <input
+        id="card-position"
+        type="range"
+        min="1"
+        max={String(total)}
+        value={String(position)}
+        aria-label="開始するカード"
+        class="min-w-0 flex-1 accent-blue-700"
+      />
+      <input
+        id="card-position-input"
+        type="number"
+        min="1"
+        max={String(total)}
+        value={String(position)}
+        aria-label="カードの番号"
+        class="w-20 rounded-md border border-neutral-300 bg-white p-1 text-right tabular-nums"
+      />
+      <span id="card-position-total" class="text-neutral-500 tabular-nums">
+        / {total}
+      </span>
+    </div>
+  );
+};
