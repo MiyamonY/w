@@ -1,5 +1,19 @@
+import { parsePlaybackRate, PlaybackRateStorageKey } from "./playback-rate";
+
 const player = new Audio();
 let finish: (() => void) | null = null;
+
+export const setPlaybackRate = (rate: number) => {
+  player.defaultPlaybackRate = rate;
+  player.playbackRate = rate;
+  localStorage.setItem(PlaybackRateStorageKey, String(rate));
+};
+
+export const currentPlaybackRate = () => player.defaultPlaybackRate;
+
+const initialRate = parsePlaybackRate(localStorage.getItem(PlaybackRateStorageKey));
+player.defaultPlaybackRate = initialRate;
+player.playbackRate = initialRate;
 
 export const playOne = (src: string): Promise<void> => {
   finish?.();

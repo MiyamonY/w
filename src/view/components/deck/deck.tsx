@@ -1,5 +1,12 @@
 import type { Group, Word } from "../../../backend/db";
 import type { Settings } from "../../../backend/settings";
+import {
+  DefaultPlaybackRate,
+  formatPlaybackRate,
+  MaxPlaybackRate,
+  MinPlaybackRate,
+  PlaybackRateStep,
+} from "../../helper/playback-rate";
 import { Card } from "../card";
 
 type Props = {
@@ -30,7 +37,7 @@ export const Deck = (props: Props) => {
           showExamplesOnFront={settings.show_examples_on_front}
         />
       </div>
-      <div class="flex items-center justify-center gap-4">
+      <div class="flex flex-wrap items-center justify-center gap-4">
         <button
           id="toggle-play"
           type="button"
@@ -40,6 +47,21 @@ export const Deck = (props: Props) => {
         </button>
         <label class="flex items-center gap-1.5">
           <input id="auto-audio" type="checkbox" checked /> 音声を自動再生
+        </label>
+        <label class="flex items-center gap-1.5">
+          速度
+          <input
+            id="playback-rate"
+            type="range"
+            min={String(MinPlaybackRate)}
+            max={String(MaxPlaybackRate)}
+            step={String(PlaybackRateStep)}
+            value={formatPlaybackRate(DefaultPlaybackRate)}
+            class="w-28 accent-blue-700"
+          />
+          <output id="playback-rate-value" for="playback-rate" class="w-10 tabular-nums">
+            {formatPlaybackRate(DefaultPlaybackRate)}x
+          </output>
         </label>
       </div>
     </>

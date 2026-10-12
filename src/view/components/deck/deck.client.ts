@@ -1,4 +1,10 @@
-import { playOne, stopAudio } from "../../helper/audio-player.client";
+import {
+  currentPlaybackRate,
+  playOne,
+  setPlaybackRate,
+  stopAudio,
+} from "../../helper/audio-player.client";
+import { formatPlaybackRate, parsePlaybackRate } from "../../helper/playback-rate";
 
 type Dir = "prev" | "next";
 
@@ -30,6 +36,21 @@ const setupDeck = (deck: HTMLElement) => {
   let gen = 0;
 
   const autoAudioOn = () => autoAudio?.checked ?? false;
+
+  const rateInput = document.getElementById("playback-rate") as HTMLInputElement | null;
+  const rateValue = document.getElementById("playback-rate-value");
+  const showRate = (rate: number) => {
+    if (rateValue) rateValue.textContent = `${formatPlaybackRate(rate)}x`;
+  };
+  if (rateInput) {
+    rateInput.value = formatPlaybackRate(currentPlaybackRate());
+    showRate(currentPlaybackRate());
+    rateInput.addEventListener("input", () => {
+      const rate = parsePlaybackRate(rateInput.value);
+      setPlaybackRate(rate);
+      showRate(rate);
+    });
+  }
 
   const playQueue = async (srcs: string[], my: number) => {
     for (const src of srcs) {
@@ -105,6 +126,8 @@ const setupDeck = (deck: HTMLElement) => {
   });
 
   document.addEventListener("keydown", (e) => {
+    if (closest(e.target, "input, select, textarea")) return;
+    if (closest(e.target, "button, a") && (e.key === " " || e.key === "Enter")) return;
     if (e.key === "ArrowRight") go("next");
     else if (e.key === "ArrowLeft") go("prev");
     else if (e.key === " ") {
