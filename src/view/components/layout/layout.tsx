@@ -19,11 +19,12 @@ const ClientAssets = () => {
 
 type Props = {
   title: string;
+  wide?: boolean;
   children: Child;
 };
 
 export const Layout = (props: Props) => {
-  const { title, children } = props;
+  const { title, wide, children } = props;
   return (
     <html lang="ja">
       <head>
@@ -32,7 +33,9 @@ export const Layout = (props: Props) => {
         <title>{title}</title>
         <ClientAssets />
       </head>
-      <body>{children}</body>
+      <body class="bg-gray-100 font-sans text-neutral-800">
+        <main class={`mx-auto px-4 py-6 ${wide ? "max-w-240" : "max-w-140"}`}>{children}</main>
+      </body>
     </html>
   );
 };

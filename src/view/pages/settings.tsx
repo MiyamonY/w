@@ -1,5 +1,6 @@
 import type { Settings } from "../../backend/settings";
 import { Layout } from "../components/layout";
+import { PageHeader } from "../components/page-header";
 import { SettingsForm } from "../components/settings-form";
 
 type Props = {
@@ -11,15 +12,8 @@ export const SettingsPage = (props: Props) => {
   const { settings, status } = props;
   return (
     <Layout title="設定 - 単語帳">
-      <main class="container">
-        <header class="player-header">
-          <a href="/" class="back-link">
-            ← 一覧
-          </a>
-          <h1>設定</h1>
-        </header>
-        <SettingsForm settings={settings} status={status} />
-      </main>
+      <PageHeader title="設定" backHref="/" />
+      <SettingsForm settings={settings} status={status} />
     </Layout>
   );
 };

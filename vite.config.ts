@@ -1,4 +1,5 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 const RequiredEnv = [
@@ -20,6 +21,7 @@ export default defineConfig(({ command }) => {
 
   return {
     plugins: [
+      tailwindcss(),
       cloudflare({
         config: (config) => {
           if (!isBuild) return;

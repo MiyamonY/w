@@ -9,31 +9,39 @@ type Props = {
   currentGroupId?: number;
 };
 
+const Cell = "px-3 py-2.5 align-top";
+
 export const WordTable = (props: Props) => {
   const { words, cardHref, currentGroupId } = props;
-  if (words.length === 0) return <p class="muted">単語がありません。</p>;
+  if (words.length === 0) return <p class="text-sm text-neutral-500">単語がありません。</p>;
   return (
-    <table class="word-table">
-      <thead>
+    <table class="w-full overflow-hidden rounded-xl bg-white text-sm shadow-sm">
+      <thead class="bg-slate-50 text-left whitespace-nowrap text-neutral-500">
         <tr>
-          <th class="word-table-id">ID</th>
-          <th>単語</th>
-          <th>意味</th>
-          <th>例文</th>
-          <th>グループ</th>
+          <th class={`${Cell} w-px text-right`}>ID</th>
+          <th class={Cell}>単語</th>
+          <th class={Cell}>意味</th>
+          <th class={Cell}>例文</th>
+          <th class={Cell}>グループ</th>
         </tr>
       </thead>
       <tbody>
         {words.map((w, i) => (
-          <tr>
-            <td class="word-table-id">{w.id}</td>
-            <td class="word-table-term">
-              {cardHref ? <a href={cardHref(i)}>{w.term}</a> : w.term}
+          <tr class="border-t border-neutral-100">
+            <td class={`${Cell} text-right text-neutral-400 tabular-nums`}>{w.id}</td>
+            <td class={`${Cell} font-semibold whitespace-nowrap`}>
+              {cardHref ? (
+                <a href={cardHref(i)} class="underline">
+                  {w.term}
+                </a>
+              ) : (
+                w.term
+              )}
               <SpeakButton audioKey={w.audio_key} label="音声を再生" />
             </td>
-            <td>{w.meaning}</td>
-            <td>{w.examples.length > 0 && <Examples examples={w.examples} />}</td>
-            <td>
+            <td class={Cell}>{w.meaning}</td>
+            <td class={Cell}>{w.examples.length > 0 && <Examples examples={w.examples} />}</td>
+            <td class={Cell}>
               <GroupTags groups={w.groups.filter((g) => g.id !== currentGroupId)} />
             </td>
           </tr>

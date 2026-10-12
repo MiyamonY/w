@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+
+@custom-variant flipped (.flipped &);
+@custom-variant swap-out-next (.htmx-swapping[data-dir="next"] &);
+@custom-variant swap-out-prev (.htmx-swapping[data-dir="prev"] &);
+@custom-variant swap-in-next (#deck[data-dir="next"] &.htmx-added);
+@custom-variant swap-in-prev (#deck[data-dir="prev"] &.htmx-added);

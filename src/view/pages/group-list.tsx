@@ -1,5 +1,6 @@
 import type { Group } from "../../backend/db";
 import { Layout } from "../components/layout";
+import { PageHeader } from "../components/page-header";
 
 type Props = {
   groups: Group[];
@@ -10,37 +11,41 @@ export const GroupList = (props: Props) => {
   const { groups, totalWords } = props;
   return (
     <Layout title="単語帳">
-      <main class="container">
-        <header class="player-header">
-          <h1>単語帳</h1>
-          <a href="/settings" class="header-link">
-            設定
-          </a>
-        </header>
-        <a href="/words" class="all-words">
-          <span class="group-name">すべての単語</span>
-          <span class="muted">{totalWords} 語</span>
-        </a>
-        <h2>グループ</h2>
-        {groups.length === 0 ? (
-          <p class="muted">グループがありません。</p>
-        ) : (
-          <ul class="groups">
-            {groups.map((g) => (
-              <li>
-                <a href={`/groups/${g.id}`} class="group-main">
-                  <span class="group-name">{g.name}</span>
-                  <span class="muted">{g.word_count} 語</span>
-                  {g.description && <span class="group-desc">{g.description}</span>}
-                </a>
-                <a href={`/groups/${g.id}/words`} class="group-list-link">
-                  単語リスト
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </main>
+      <PageHeader title="単語帳" link={{ href: "/settings", label: "設定" }} />
+      <a
+        href="/words"
+        class="mt-4 flex items-center justify-between rounded-xl bg-blue-700 p-4 text-white"
+      >
+        <span class="text-lg font-semibold">すべての単語</span>
+        <span class="text-sm text-blue-100">{totalWords} 語</span>
+      </a>
+      <h2 class="mt-6 text-neutral-500">グループ</h2>
+      {groups.length === 0 ? (
+        <p class="text-sm text-neutral-500">グループがありません。</p>
+      ) : (
+        <ul class="my-4 grid gap-3">
+          {groups.map((g) => (
+            <li class="relative">
+              <a
+                href={`/groups/${g.id}`}
+                class="grid grid-cols-[1fr_auto] gap-1 rounded-xl bg-white p-4 pr-28 shadow-sm"
+              >
+                <span class="text-lg font-semibold">{g.name}</span>
+                <span class="text-sm text-neutral-500">{g.word_count} 語</span>
+                {g.description && (
+                  <span class="col-span-full text-sm text-neutral-500">{g.description}</span>
+                )}
+              </a>
+              <a
+                href={`/groups/${g.id}/words`}
+                class="absolute top-1/2 right-4 -translate-y-1/2 text-sm text-blue-700"
+              >
+                単語リスト
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
     </Layout>
   );
 };
