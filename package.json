@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "hono": "^4.13.13",
-    "htmx.org": "2.0.11"
+    "htmx.org": "2.0.11",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.63.1",

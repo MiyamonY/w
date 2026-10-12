@@ -1,29 +1,40 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
+import { z } from "zod";
 
-const RequiredEnv = [
-  "WORKER_D1_DATABASE_ID",
-  "WORKER_ACCESS_TEAM_DOMAIN",
-  "WORKER_ACCESS_AUD",
-] as const;
+const EnvSchema = z.object({
+  WORKER_DOMAIN: z.hostname().optional(),
+  WORKER_D1_DATABASE_ID: z.uuid(),
+  WORKER_ACCESS_TEAM_DOMAIN: z.string().regex(/^[a-z0-9-]+\.cloudflareaccess\.com$/, {
+    error: "<team>.cloudflareaccess.com の形式で指定してください",
+  }),
+  WORKER_ACCESS_AUD: z.string().regex(/^[0-9a-f]{64}$/, {
+    error: "64桁の16進数（Application Audience Tag）を指定してください",
+  }),
+});
+
+const loadEnv = () => {
+  const values = Object.fromEntries(
+    Object.keys(EnvSchema.shape).map((key) => [key, process.env[key] || undefined]),
+  );
+  const result = EnvSchema.safeParse(values);
+  if (!result.success) {
+    throw new Error(`環境変数が正しくありません\n${z.prettifyError(result.error)}`);
+  }
+  return result.data;
+};
 
 export default defineConfig(({ command }) => {
-  const env = process.env;
   const isBuild = command === "build";
-  if (isBuild) {
-    const missing = RequiredEnv.filter((key) => !env[key]);
-    if (missing.length > 0) {
-      throw new Error(`環境変数 ${missing.join(", ")} を設定してください`);
-    }
-  }
+  const env = isBuild ? loadEnv() : undefined;
 
   return {
     plugins: [
       tailwindcss(),
       cloudflare({
         config: (config) => {
-          if (!isBuild) return;
+          if (!env) return;
           if (env.WORKER_DOMAIN) {
             config.routes = [{ pattern: env.WORKER_DOMAIN, custom_domain: true }];
           } else {

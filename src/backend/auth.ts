@@ -1,13 +1,20 @@
 import { createMiddleware } from "hono/factory";
 import { verifyWithJwks } from "hono/jwt";
+import { z } from "zod";
+
+const AccessEnvSchema = z.object({
+  ACCESS_TEAM_DOMAIN: z.string().min(1),
+  ACCESS_AUD: z.string().min(1),
+});
 
 export const requireAccess = createMiddleware<{ Bindings: Env }>(async (c, next) => {
   if (c.env.ACCESS_DISABLED === "true") return next();
 
-  const { ACCESS_TEAM_DOMAIN: teamDomain, ACCESS_AUD: aud } = c.env;
-  if (!teamDomain || !aud) {
+  const accessEnv = AccessEnvSchema.safeParse(c.env);
+  if (!accessEnv.success) {
     return c.text("Cloudflare Access is not configured", 500);
   }
+  const { ACCESS_TEAM_DOMAIN: teamDomain, ACCESS_AUD: aud } = accessEnv.data;
 
   const token = c.req.header("cf-access-jwt-assertion");
   if (!token) return c.text("Unauthorized", 401);

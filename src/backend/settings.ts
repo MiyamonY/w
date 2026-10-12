@@ -1,22 +1,29 @@
-export type Settings = {
-  front_ms: number;
-  back_ms: number;
-  show_examples_on_front: boolean;
-};
+import { z } from "zod";
 
 export const MinDisplayMs = 500;
 export const MaxDisplayMs = 60000;
 
-const DefaultSettings: Settings = { front_ms: 3000, back_ms: 3000, show_examples_on_front: false };
+const DisplayMsSchema = z.number().int().min(MinDisplayMs).max(MaxDisplayMs);
 
-type SettingsRow = Omit<Settings, "show_examples_on_front"> & { show_examples_on_front: number };
+export const SettingsSchema = z.object({
+  front_ms: DisplayMsSchema,
+  back_ms: DisplayMsSchema,
+  show_examples_on_front: z.boolean(),
+});
+
+export type Settings = z.infer<typeof SettingsSchema>;
+
+const SettingsRowSchema = SettingsSchema.extend({
+  show_examples_on_front: z.union([z.literal(0), z.literal(1)]).transform((v) => v === 1),
+});
+
+const DefaultSettings: Settings = { front_ms: 3000, back_ms: 3000, show_examples_on_front: false };
 
 export const getSettings = async (db: D1Database): Promise<Settings> => {
   const row = await db
     .prepare(`SELECT front_ms, back_ms, show_examples_on_front FROM settings WHERE id = 1`)
-    .first<SettingsRow>();
-  if (!row) return DefaultSettings;
-  return { ...row, show_examples_on_front: row.show_examples_on_front === 1 };
+    .first();
+  return row ? SettingsRowSchema.parse(row) : DefaultSettings;
 };
 
 export const updateSettings = async (db: D1Database, settings: Settings): Promise<void> => {
@@ -28,12 +35,3 @@ export const updateSettings = async (db: D1Database, settings: Settings): Promis
     .bind(settings.front_ms, settings.back_ms, settings.show_examples_on_front ? 1 : 0)
     .run();
 };
-
-export const parseDisplayMs = (value: unknown): number | null => {
-  if (typeof value !== "number" || !Number.isInteger(value)) return null;
-  if (value < MinDisplayMs || value > MaxDisplayMs) return null;
-  return value;
-};
-
-export const parseBoolean = (value: unknown): boolean | null =>
-  typeof value === "boolean" ? value : null;

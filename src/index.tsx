@@ -10,8 +10,8 @@ import {
 } from "./backend/db";
 import { serveAudio } from "./backend/audio";
 import { requireAccess } from "./backend/auth";
-import { resolvePaging } from "./backend/paging";
-import { getSettings, parseBoolean, parseDisplayMs, updateSettings } from "./backend/settings";
+import { resolvePaging, StartIndexSchema } from "./backend/paging";
+import { getSettings, SettingsSchema, updateSettings } from "./backend/settings";
 import { Card } from "./view/components/card";
 import { PagedWordTable } from "./view/components/paged-word-table";
 import { SettingsForm } from "./view/components/settings-form";
@@ -52,7 +52,7 @@ app.get("/groups/:id{[0-9]+}", async (c) => {
   const id = Number(c.req.param("id"));
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
-  const requested = Math.max(0, Math.floor(Number(c.req.query("start")) || 0));
+  const requested = StartIndexSchema.parse(c.req.query("start"));
   const start = group.word_count > 0 ? requested % group.word_count : 0;
   const [first, settings] = await Promise.all([
     group.word_count > 0 ? getWordAt(c.env.DB, id, start) : null,
@@ -110,17 +110,13 @@ app.get("/settings", async (c) => {
 });
 
 app.post("/settings", async (c) => {
-  const body = await c.req.json<Record<string, unknown>>().catch(() => null);
-  const front_ms = parseDisplayMs(body?.front_ms);
-  const back_ms = parseDisplayMs(body?.back_ms);
-  const show_examples_on_front = parseBoolean(body?.show_examples_on_front);
-  if (front_ms === null || back_ms === null || show_examples_on_front === null) {
+  const input = SettingsSchema.safeParse(await c.req.json().catch(() => null));
+  if (!input.success) {
     const settings = await getSettings(c.env.DB);
     return c.html(<SettingsForm settings={settings} status="invalid" />, 422);
   }
-  const settings = { front_ms, back_ms, show_examples_on_front };
-  await updateSettings(c.env.DB, settings);
-  return c.html(<SettingsForm settings={settings} status="saved" />);
+  await updateSettings(c.env.DB, input.data);
+  return c.html(<SettingsForm settings={input.data} status="saved" />);
 });
 
 app.get("/audio/:key{.+}", (c) => serveAudio(c.env.AUDIO, c.req.param("key"), c.req.raw));

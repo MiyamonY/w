@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export const PerPageOptions = [10, 50, 100, 500] as const;
 export const DefaultPerPage = 50;
 
@@ -9,11 +11,16 @@ export type Paging = {
   offset: number;
 };
 
-export const resolvePaging = (query: { page?: string; per?: string }, total: number): Paging => {
-  const requestedPer = Number(query.per);
-  const per = PerPageOptions.some((n) => n === requestedPer) ? requestedPer : DefaultPerPage;
+const PagingQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).catch(1),
+  per: z.coerce.number().pipe(z.literal(PerPageOptions)).catch(DefaultPerPage),
+});
+
+export const StartIndexSchema = z.coerce.number().int().min(0).catch(0);
+
+export const resolvePaging = (query: Record<string, string>, total: number): Paging => {
+  const { page: requestedPage, per } = PagingQuerySchema.parse(query);
   const pages = Math.max(1, Math.ceil(total / per));
-  const requestedPage = Math.floor(Number(query.page));
-  const page = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), pages) : 1;
+  const page = Math.min(requestedPage, pages);
   return { page, per, pages, total, offset: (page - 1) * per };
 };
