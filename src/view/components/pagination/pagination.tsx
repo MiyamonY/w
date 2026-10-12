@@ -1,14 +1,13 @@
-import { PerPageOptions, type Paging } from "../../../backend/paging";
+import type { Paging } from "../../../backend/paging";
 
 type Props = {
   paging: Paging;
-  basePath: string;
+  href: (page: number) => string;
 };
 
 export const Pagination = (props: Props) => {
-  const { paging, basePath } = props;
+  const { paging, href } = props;
   const { page, pages, per, total, offset } = paging;
-  const href = (target: number) => `${basePath}?page=${target}&per=${per}`;
   const link = (target: number, label: string, ariaLabel: string) =>
     target >= 1 && target <= pages && target !== page ? (
       <a
@@ -41,18 +40,6 @@ export const Pagination = (props: Props) => {
         {link(page + 1, "›", "次のページ")}
         {link(pages, "»", "最後のページ")}
       </div>
-      <form method="get" action={basePath} hx-get={basePath} hx-trigger="change">
-        <label>
-          表示件数
-          <select name="per" class="ml-1.5 rounded-md border border-neutral-300 bg-white p-1">
-            {PerPageOptions.map((n) => (
-              <option value={String(n)} selected={n === per}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </label>
-      </form>
     </nav>
   );
 };

@@ -1,0 +1,52 @@
+import type { Group } from "../../../backend/db";
+import { PerPageOptions } from "../../../backend/paging";
+
+type Props = {
+  groups: Group[];
+  groupId?: number;
+  per: number;
+};
+
+const Select = "rounded-md border border-neutral-300 bg-white p-1";
+
+export const WordListFilter = (props: Props) => {
+  const { groups, groupId, per } = props;
+  return (
+    <form
+      method="get"
+      action="/words"
+      hx-get="/words"
+      hx-trigger="change"
+      class="flex flex-wrap items-center gap-4 text-sm"
+    >
+      <label class="flex items-center gap-1.5">
+        グループ
+        <select name="group" class={Select}>
+          <option value="" selected={groupId === undefined}>
+            すべてのグループ
+          </option>
+          {groups.map((g) => (
+            <option value={String(g.id)} selected={g.id === groupId}>
+              {g.name}（{g.word_count}）
+            </option>
+          ))}
+        </select>
+      </label>
+      <label class="flex items-center gap-1.5">
+        表示件数
+        <select name="per" class={Select}>
+          {PerPageOptions.map((n) => (
+            <option value={String(n)} selected={n === per}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
+      <noscript>
+        <button type="submit" class="rounded-md bg-white px-2 py-1 shadow-sm">
+          表示
+        </button>
+      </noscript>
+    </form>
+  );
+};

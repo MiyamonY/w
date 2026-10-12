@@ -18,6 +18,8 @@ const PagingQuerySchema = z.object({
 
 export const StartIndexSchema = z.coerce.number().int().min(0).catch(0);
 
+export const GroupFilterSchema = z.coerce.number().int().positive().optional().catch(undefined);
+
 export const resolvePaging = (query: Record<string, string>, total: number): Paging => {
   const { page: requestedPage, per } = PagingQuerySchema.parse(query);
   const pages = Math.max(1, Math.ceil(total / per));

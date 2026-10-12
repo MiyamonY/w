@@ -1,6 +1,7 @@
 import type { Group } from "../../backend/db";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
+import { wordsUrl } from "../helper/words-url";
 
 type Props = {
   groups: Group[];
@@ -37,7 +38,7 @@ export const GroupList = (props: Props) => {
                 )}
               </a>
               <a
-                href={`/groups/${g.id}/words`}
+                href={wordsUrl({ group: g.id })}
                 class="absolute top-1/2 right-4 -translate-y-1/2 text-sm text-blue-700"
               >
                 単語リスト

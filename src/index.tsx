@@ -10,16 +10,16 @@ import {
 } from "./backend/db";
 import { serveAudio } from "./backend/audio";
 import { requireAccess } from "./backend/auth";
-import { resolvePaging, StartIndexSchema } from "./backend/paging";
+import { GroupFilterSchema, resolvePaging, StartIndexSchema } from "./backend/paging";
 import { getSettings, SettingsSchema, updateSettings } from "./backend/settings";
 import { Card } from "./view/components/card";
 import { PagedWordTable } from "./view/components/paged-word-table";
 import { SettingsForm } from "./view/components/settings-form";
 import { AllWordList } from "./view/pages/all-word-list";
 import { GroupList } from "./view/pages/group-list";
-import { GroupWordList } from "./view/pages/group-word-list";
 import { Player } from "./view/pages/player";
 import { SettingsPage } from "./view/pages/settings";
+import { wordsUrl } from "./view/helper/words-url";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -35,15 +35,23 @@ app.get("/", async (c) => {
 });
 
 app.get("/words", async (c) => {
-  const total = await countWords(c.env.DB);
+  const db = c.env.DB;
+  const requestedGroupId = GroupFilterSchema.parse(c.req.query("group"));
+  const [groups, group] = await Promise.all([
+    listGroups(db),
+    requestedGroupId === undefined ? null : getGroup(db, requestedGroupId),
+  ]);
+  const total = group ? group.word_count : await countWords(db);
   const paging = resolvePaging(c.req.query(), total);
-  const words = await listAllWords(c.env.DB, { limit: paging.per, offset: paging.offset });
+  const range = { limit: paging.per, offset: paging.offset };
+  const words = group ? await listGroupWords(db, group.id, range) : await listAllWords(db, range);
+  const groupId = group?.id;
   c.header("Vary", "HX-Request");
   return c.html(
     wantsFragment(c) ? (
-      <PagedWordTable words={words} paging={paging} basePath="/words" />
+      <PagedWordTable words={words} paging={paging} groups={groups} groupId={groupId} />
     ) : (
-      <AllWordList words={words} paging={paging} />
+      <AllWordList words={words} paging={paging} groups={groups} groupId={groupId} />
     ),
   );
 });
@@ -61,27 +69,9 @@ app.get("/groups/:id{[0-9]+}", async (c) => {
   return c.html(<Player group={group} start={start} first={first} settings={settings} />);
 });
 
-app.get("/groups/:id{[0-9]+}/words", async (c) => {
-  const id = Number(c.req.param("id"));
-  const group = await getGroup(c.env.DB, id);
-  if (!group) return c.notFound();
-  const paging = resolvePaging(c.req.query(), group.word_count);
-  const words = await listGroupWords(c.env.DB, id, { limit: paging.per, offset: paging.offset });
-  c.header("Vary", "HX-Request");
-  return c.html(
-    wantsFragment(c) ? (
-      <PagedWordTable
-        words={words}
-        paging={paging}
-        basePath={`/groups/${id}/words`}
-        cardHref={(i) => `/groups/${id}?start=${i}`}
-        currentGroupId={id}
-      />
-    ) : (
-      <GroupWordList group={group} words={words} paging={paging} />
-    ),
-  );
-});
+app.get("/groups/:id{[0-9]+}/words", (c) =>
+  c.redirect(wordsUrl({ group: Number(c.req.param("id")) }), 301),
+);
 
 app.get("/groups/:id{[0-9]+}/cards/:index{[0-9]+}", async (c) => {
   const id = Number(c.req.param("id"));

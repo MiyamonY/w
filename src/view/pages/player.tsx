@@ -3,6 +3,7 @@ import type { Settings } from "../../backend/settings";
 import { Deck } from "../components/deck";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
+import { wordsUrl } from "../helper/words-url";
 
 type Props = {
   group: Group;
@@ -18,7 +19,7 @@ export const Player = (props: Props) => {
       <PageHeader
         title={group.name}
         backHref="/"
-        link={{ href: `/groups/${group.id}/words`, label: "単語リスト" }}
+        link={{ href: wordsUrl({ group: group.id }), label: "単語リスト" }}
       />
       <Deck group={group} start={start} first={first} settings={settings} />
     </Layout>

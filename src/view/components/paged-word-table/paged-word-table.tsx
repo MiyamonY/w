@@ -1,27 +1,32 @@
-import type { WordWithGroups } from "../../../backend/db";
+import type { Group, WordWithGroups } from "../../../backend/db";
 import type { Paging } from "../../../backend/paging";
+import { wordsUrl } from "../../helper/words-url";
 import { Pagination } from "../pagination";
+import { WordListFilter } from "../word-list-filter";
 import { WordTable } from "../word-table";
 
 type Props = {
   words: WordWithGroups[];
   paging: Paging;
-  basePath: string;
-  cardHref?: (index: number) => string;
-  currentGroupId?: number;
+  groups: Group[];
+  groupId?: number;
 };
 
 export const PagedWordTable = (props: Props) => {
-  const { words, paging, basePath, cardHref, currentGroupId } = props;
+  const { words, paging, groups, groupId } = props;
+  const href = (page: number) => wordsUrl({ group: groupId, page, per: paging.per });
   return (
     <section id="paged-word-table" hx-target="this" hx-swap="outerHTML" hx-push-url="true">
-      <Pagination paging={paging} basePath={basePath} />
+      <WordListFilter groups={groups} groupId={groupId} per={paging.per} />
+      <Pagination paging={paging} href={href} />
       <WordTable
         words={words}
-        cardHref={cardHref && ((i) => cardHref(paging.offset + i))}
-        currentGroupId={currentGroupId}
+        cardHref={
+          groupId === undefined ? undefined : (i) => `/groups/${groupId}?start=${paging.offset + i}`
+        }
+        currentGroupId={groupId}
       />
-      {paging.pages > 1 && <Pagination paging={paging} basePath={basePath} />}
+      {paging.pages > 1 && <Pagination paging={paging} href={href} />}
     </section>
   );
 };
