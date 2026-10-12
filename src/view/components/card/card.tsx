@@ -1,5 +1,6 @@
 import type { Word } from "../../../backend/db";
 import { audioUrl } from "../../helper/audio-url";
+import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
 import { SpeakButton } from "../speak-button";
 
@@ -27,6 +28,11 @@ export const Card = (props: Props) => {
     >
       <div class="relative flex-1 cursor-pointer perspective-[1000px]">
         <div class={`${Face} flipped:-rotate-y-180`}>
+          {word.numbers.length > 0 && (
+            <div class="absolute top-3 left-4 text-xs text-neutral-400 tabular-nums">
+              {formatSourceNumbers(word.numbers)}
+            </div>
+          )}
           <div class="text-4xl font-bold">{word.term}</div>
           {showExamplesOnFront && word.examples.length > 0 && (
             <ul class="grid gap-1.5 text-neutral-600">

@@ -13,12 +13,18 @@ export type Example = {
   source_url: string | null;
 };
 
+export type SourceNumber = {
+  number: number;
+  source_title: string;
+};
+
 export type Word = {
   id: number;
   term: string;
   meaning: string;
   audio_key: string | null;
   examples: Example[];
+  numbers: SourceNumber[];
 };
 
 export type GroupRef = { id: number; name: string };
@@ -64,6 +70,14 @@ const ExamplesJson = `
             WHERE e.word_id = w.id
             ORDER BY e.sort_order, e.id)) AS examples_json`;
 
+const NumbersJson = `
+  (SELECT json_group_array(json_object('number', number, 'source_title', source_title))
+     FROM (SELECT sw.number, s.title AS source_title
+             FROM source_words sw
+             JOIN sources s ON s.id = sw.source_id
+            WHERE sw.word_id = w.id
+            ORDER BY s.id)) AS numbers_json`;
+
 const GroupsJson = `
   (SELECT json_group_array(json_object('id', id, 'name', name))
      FROM (SELECT g.id, g.name
@@ -72,14 +86,15 @@ const GroupsJson = `
             WHERE x.word_id = w.id
             ORDER BY g.sort_order, g.id)) AS groups_json`;
 
-const WordColumns = `w.id, w.term, w.meaning, w.audio_key, ${ExamplesJson}`;
+const WordColumns = `w.id, w.term, w.meaning, w.audio_key, ${ExamplesJson}, ${NumbersJson}`;
 
-type WordRow = Omit<Word, "examples"> & { examples_json: string };
+type WordRow = Omit<Word, "examples" | "numbers"> & { examples_json: string; numbers_json: string };
 type WordWithGroupsRow = WordRow & { groups_json: string };
 
-const toWord = ({ examples_json, ...w }: WordRow): Word => ({
+const toWord = ({ examples_json, numbers_json, ...w }: WordRow): Word => ({
   ...w,
   examples: JSON.parse(examples_json) as Example[],
+  numbers: JSON.parse(numbers_json) as SourceNumber[],
 });
 
 const toWordWithGroups = ({ groups_json, ...row }: WordWithGroupsRow): WordWithGroups => ({

@@ -1,4 +1,5 @@
 import type { WordWithGroups } from "../../../backend/db";
+import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
 import { GroupTags } from "../group-tags";
 import { SpeakButton } from "../speak-button";
@@ -19,6 +20,7 @@ export const WordTable = (props: Props) => {
       <thead class="bg-slate-50 text-left whitespace-nowrap text-neutral-500">
         <tr>
           <th class={`${Cell} w-px text-right`}>ID</th>
+          <th class={`${Cell} w-px`}>No.</th>
           <th class={Cell}>単語</th>
           <th class={Cell}>意味</th>
           <th class={Cell}>例文</th>
@@ -29,6 +31,9 @@ export const WordTable = (props: Props) => {
         {words.map((w, i) => (
           <tr class="border-t border-neutral-100">
             <td class={`${Cell} text-right text-neutral-400 tabular-nums`}>{w.id}</td>
+            <td class={`${Cell} whitespace-nowrap tabular-nums`}>
+              {w.numbers.length > 0 && formatSourceNumbers(w.numbers, "")}
+            </td>
             <td class={`${Cell} font-semibold whitespace-nowrap`}>
               {cardHref ? (
                 <a href={cardHref(i)} class="underline">
