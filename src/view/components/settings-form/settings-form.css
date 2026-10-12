@@ -1,0 +1,52 @@
+.settings-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  label {
+    display: grid;
+    gap: 6px;
+
+    &.checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      input {
+        width: auto;
+      }
+    }
+  }
+
+  input {
+    font-size: 1.1em;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    max-width: 10em;
+  }
+
+  button {
+    justify-self: start;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 24px;
+    background: #2b6cb0;
+    color: #fff;
+    font-size: 1em;
+    cursor: pointer;
+  }
+
+  .settings-status {
+    margin: 0;
+    color: #2f855a;
+
+    &.error {
+      color: #c53030;
+    }
+  }
+}

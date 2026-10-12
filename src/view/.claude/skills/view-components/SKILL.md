@@ -62,9 +62,19 @@ components/deck/
 - 複数の `.client.ts` で共有する処理は `helper/<名前>.client.ts`（例: `helper/audio-player.client.ts`）
 - `.client.ts` は読み込まれた時点で動き出す。対象要素は `id` や `class` で探し、無いページでは何もしない
 - htmx は npm の `htmx.org` を `import htmx from "htmx.org"` で使う（CDN からは読み込まない）。htmx の拡張は `helper/<名前>.client.ts` で `htmx.defineExtension` する（例: フォームを型付き JSON で送る `helper/htmx-json-enc.client.ts` の `json-enc-typed`）
-- ブラウザ側の入口は `src/view/client.ts`。`import.meta.glob` で `src/view/**/*.client.ts` を自動で読み込み、`style.css` も取り込む。新しい `.client.ts` を置けば登録は不要
+- ブラウザ側の入口は `src/view/client.ts`。`import.meta.glob` で `src/view/**/*.client.ts` と `src/view/**/*.css` を自動で読み込む。新しいファイルを置けば登録は不要
 - Vite がバンドルする。`pnpm dev` ではホットリロード、`pnpm build` で `dist/client/assets/app.js` / `app.css` を出力し、`Layout` がそれを読み込む
 - `client.ts` と `.client.ts` は DOM 用の `tsconfig.client.json`、それ以外は Worker 用の `tsconfig.json` で型チェックされる
+
+## CSS
+
+スタイルは、それを使うコンポーネント・ページの隣に `<名前>.css` として置く（例: `components/card/card.css`、`pages/group-list.css`）。
+
+- コンポーネントのルート要素のクラス（`.card` など）を1つ外側に書き、子要素のルールは CSS Nesting で入れ子にする。ほかのコンポーネントの中身には書かない
+- 子の要素セレクタ（`li` など）が入れ子の別コンポーネントにまで当たらないよう、必要なら `> li` のように直下に限定する
+- 全体の土台（`body`、`.container`、`.muted`、ページ見出しなど）は `components/layout/layout.css`
+- 読み込み順は保証されない（glob はアルファベット順）。順番ではなくセレクタの詳細度で優先順位が決まるように書く
+- 入れ子はビルド時に平らな CSS に変換される
 
 ## 完了条件
 

@@ -1,7 +1,6 @@
-import "./style.css";
 import htmx from "htmx.org";
 
-import.meta.glob("./**/*.client.ts", { eager: true });
+import.meta.glob(["./**/*.css", "./**/*.client.ts"], { eager: true });
 
 htmx.config.responseHandling = [
   { code: "204", swap: false },
