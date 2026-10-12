@@ -22,6 +22,7 @@ export type SourceNumber = {
 export type Word = {
   id: number;
   term: string;
+  ipa: string | null;
   meaning: string;
   audio_key: string | null;
   examples: Example[];
@@ -93,7 +94,7 @@ const IsFavorite = `EXISTS (SELECT 1 FROM group_words fx JOIN word_groups fg ON 
 
 const FavoriteColumn = `${IsFavorite} AS favorite`;
 
-const WordColumns = `w.id, w.term, w.meaning, w.audio_key, ${ExamplesJson}, ${NumbersJson}, ${FavoriteColumn}`;
+const WordColumns = `w.id, w.term, w.ipa, w.meaning, w.audio_key, ${ExamplesJson}, ${NumbersJson}, ${FavoriteColumn}`;
 
 type WordRow = Omit<Word, "examples" | "numbers" | "favorite"> & {
   examples_json: string;

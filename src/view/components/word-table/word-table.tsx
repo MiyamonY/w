@@ -45,6 +45,7 @@ export const WordTable = (props: Props) => {
               )}
               <SpeakButton audioKey={w.audio_key} label="音声を再生" />
               <FavoriteButton wordId={w.id} favorite={w.favorite} />
+              {w.ipa && <div class="font-normal text-neutral-500">/{w.ipa}/</div>}
             </td>
             <td class={Cell}>{w.meaning}</td>
             <td class={Cell}>{w.examples.length > 0 && <Examples examples={w.examples} />}</td>

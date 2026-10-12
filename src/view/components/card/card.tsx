@@ -46,6 +46,7 @@ export const Card = (props: Props) => {
               class="cursor-pointer p-1 text-2xl leading-none"
             />
           </div>
+          {word.ipa && <div class="-mt-2 text-lg text-neutral-500">/{word.ipa}/</div>}
           {showExamplesOnFront && word.examples.length > 0 && (
             <ul class="grid gap-1.5 text-neutral-600">
               {word.examples.map((e) => (
@@ -57,6 +58,7 @@ export const Card = (props: Props) => {
         <div class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}>
           <div class="flex items-center gap-1">
             <div class="text-xl font-medium text-neutral-500">{word.term}</div>
+            {word.ipa && <div class="text-neutral-400">/{word.ipa}/</div>}
             <SpeakButton
               audioKey={word.audio_key}
               label="音声を再生"
