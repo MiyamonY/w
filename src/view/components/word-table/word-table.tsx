@@ -11,31 +11,42 @@ type Props = {
   currentGroupId?: number;
 };
 
-const Cell = "px-3 py-2.5 align-top";
+const Head = "px-3 py-2.5";
+const Cell =
+  "block py-0.5 empty:hidden md:table-cell md:px-3 md:py-2.5 md:align-top md:empty:table-cell";
 
 export const WordTable = (props: Props) => {
   const { words, cardHref, currentGroupId } = props;
   if (words.length === 0) return <p class="text-sm text-neutral-500">単語がありません。</p>;
   return (
-    <table class="w-full overflow-hidden rounded-xl bg-white text-sm shadow-sm">
-      <thead class="bg-slate-50 text-left whitespace-nowrap text-neutral-500">
+    <table class="block w-full text-sm md:table md:overflow-hidden md:rounded-xl md:bg-white md:shadow-sm">
+      <thead class="hidden bg-slate-50 text-left whitespace-nowrap text-neutral-500 md:table-header-group">
         <tr>
-          <th class={`${Cell} w-px text-right`}>ID</th>
-          <th class={`${Cell} w-px`}>No.</th>
-          <th class={Cell}>単語</th>
-          <th class={Cell}>意味</th>
-          <th class={Cell}>例文</th>
-          <th class={Cell}>グループ</th>
+          <th class={`${Head} w-px text-right`}>ID</th>
+          <th class={`${Head} w-px`}>No.</th>
+          <th class={Head}>単語</th>
+          <th class={Head}>意味</th>
+          <th class={Head}>例文</th>
+          <th class={Head}>グループ</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="grid gap-3 md:table-row-group">
         {words.map((w, i) => (
-          <tr class="border-t border-neutral-100">
-            <td class={`${Cell} text-right text-neutral-400 tabular-nums`}>{w.id}</td>
-            <td class={`${Cell} whitespace-nowrap tabular-nums`}>
-              {w.numbers.length > 0 && formatSourceNumbers(w.numbers, "")}
+          <tr class="block rounded-xl bg-white p-3 shadow-sm md:table-row md:rounded-none md:border-t md:border-neutral-100 md:p-0 md:shadow-none">
+            <td class="hidden text-right text-neutral-400 tabular-nums md:table-cell md:px-3 md:py-2.5 md:align-top">
+              {w.id}
             </td>
-            <td class={`${Cell} font-semibold whitespace-nowrap`}>
+            <td
+              class={`${Cell} text-xs text-neutral-400 tabular-nums md:text-sm md:whitespace-nowrap md:text-inherit`}
+            >
+              {w.numbers.length > 0 && (
+                <>
+                  <span class="md:hidden">{formatSourceNumbers(w.numbers)}</span>
+                  <span class="hidden md:inline">{formatSourceNumbers(w.numbers, "")}</span>
+                </>
+              )}
+            </td>
+            <td class={`${Cell} text-base font-semibold md:text-sm md:whitespace-nowrap`}>
               {cardHref ? (
                 <a href={cardHref(i)} class="underline">
                   {w.term}
@@ -45,11 +56,13 @@ export const WordTable = (props: Props) => {
               )}
               <SpeakButton audioKey={w.audio_key} label="音声を再生" />
               <FavoriteButton wordId={w.id} favorite={w.favorite} />
-              {w.ipa && <div class="font-normal text-neutral-500">/{w.ipa}/</div>}
+              {w.ipa && <div class="text-sm font-normal text-neutral-500">/{w.ipa}/</div>}
             </td>
-            <td class={Cell}>{w.meaning}</td>
-            <td class={Cell}>{w.examples.length > 0 && <Examples examples={w.examples} />}</td>
-            <td class={Cell}>
+            <td class={`${Cell} text-neutral-800`}>{w.meaning}</td>
+            <td class={`${Cell} pt-1.5 md:pt-2.5`}>
+              {w.examples.length > 0 && <Examples examples={w.examples} />}
+            </td>
+            <td class={`${Cell} pt-1.5 md:pt-2.5`}>
               <GroupTags groups={w.groups.filter((g) => g.id !== currentGroupId)} />
             </td>
           </tr>
