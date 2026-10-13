@@ -16,7 +16,12 @@ export const PagedWordTable = (props: Props) => {
   const { words, paging, groups, groupId } = props;
   const href = (page: number) => wordsUrl({ group: groupId, page, per: paging.per });
   return (
-    <section id="paged-word-table" hx-target="this" hx-swap="outerHTML" hx-push-url="true">
+    <section
+      id="paged-word-table"
+      hx-target="this"
+      hx-swap="outerHTML show:window:top"
+      hx-push-url="true"
+    >
       <WordListFilter groups={groups} groupId={groupId} per={paging.per} />
       <Pagination paging={paging} href={href} />
       <WordTable
