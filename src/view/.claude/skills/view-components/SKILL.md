@@ -45,11 +45,12 @@ components/deck/
 
 ## 置き場所
 
-| 種類                                                              | 場所                       | 例                    |
-| ----------------------------------------------------------------- | -------------------------- | --------------------- |
-| ページ（`Layout` で包み、ルートから `c.html()` で返す）           | `pages/`                   | `pages/player.tsx`    |
-| 部品（ページや他の部品から使う。htmx の断片として返すものも含む） | `components/<名前>/`       | `components/card/`    |
-| コンポーネントではない補助関数                                    | `helper/` に1関数1ファイル | `helper/audio-url.ts` |
+| 種類                                                                         | 場所                                                            | 例                    |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------- | --------------------- |
+| ページ（`Layout` で包み、ルートから `c.html()` で返す）                      | `pages/`                                                        | `pages/player.tsx`    |
+| 部品（ページや他の部品から使う。htmx の断片として返すものも含む）            | `components/<名前>/`                                            | `components/card/`    |
+| コンポーネントではない補助関数                                               | `helper/` に1関数1ファイル                                      | `helper/audio-url.ts` |
+| そのまま配信する静的ファイル（PWA のマニフェスト・アイコン・Service Worker） | `public/`（`/manifest.webmanifest` のようにルートに配信される） | `public/sw.js`        |
 
 - 型は `src/backend/db.ts` から `import type` で取り込む。データ取得はルート（`src/index.tsx`）で行い、ビューは props で受け取る。
 - 新しいページは `src/index.tsx` からファイル単位で import する: `import { Player } from "./view/pages/player";`

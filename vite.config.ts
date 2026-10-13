@@ -51,7 +51,7 @@ export default defineConfig(({ command }) => {
         },
       }),
     ],
-    publicDir: false,
+    publicDir: "src/view/public",
     environments: {
       client: {
         build: {

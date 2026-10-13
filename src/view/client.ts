@@ -10,3 +10,7 @@ htmx.config.responseHandling = [
   { code: "422", swap: true },
   { code: "[45]..", swap: false, error: true },
 ];
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}
