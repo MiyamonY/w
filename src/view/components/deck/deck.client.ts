@@ -24,6 +24,9 @@ const flip = (force?: boolean) => {
   card()?.classList.toggle("flipped", force);
 };
 
+const currentFilter = (c: HTMLElement) =>
+  c.dataset.urlTemplate?.includes("only=favorites") ? "favorites" : "all";
+
 const setupDeck = (deck: HTMLElement) => {
   const frontMs = Number(deck.dataset.frontMs);
   const backMs = Number(deck.dataset.backMs);
@@ -96,20 +99,49 @@ const setupDeck = (deck: HTMLElement) => {
 
   toggleBtn?.addEventListener("click", () => setPlaying(!playing));
 
+  const progressKey = (filter: string) => `card-progress:${deck.dataset.groupId}:${filter}`;
+  const saveProgress = () => {
+    const c = card();
+    if (c) sessionStorage.setItem(progressKey(currentFilter(c)), c.dataset.index ?? "0");
+  };
+  const savedIndex = (filter: string, total: number) => {
+    const index = Number(sessionStorage.getItem(progressKey(filter)));
+    return Number.isInteger(index) && index > 0 && index < total ? index : null;
+  };
+
   const dialog = document.getElementById("start-dialog") as HTMLDialogElement | null;
   if (dialog) {
-    dialog.showModal();
+    const rows = [...dialog.querySelectorAll<HTMLElement>("section[data-filter]")];
+    let canResume = false;
+    for (const row of rows) {
+      const total = Number(row.dataset.total);
+      const index = savedIndex(row.dataset.filter ?? "all", total);
+      const resume = row.querySelector<HTMLButtonElement>('[data-start="resume"]');
+      if (index === null || !resume) continue;
+      resume.hidden = false;
+      resume.dataset.index = String(index);
+      resume.textContent = `続きから（${index + 1} / ${total}）`;
+      canResume = true;
+    }
+    if (rows.length > 1 || canResume) dialog.showModal();
+
     dialog.addEventListener("click", (e) => {
-      const choice = closest(e.target, "[data-only]");
-      if (!choice) return;
+      const button = closest(e.target, "[data-start]");
+      const row = closest(e.target, "section[data-filter]");
+      if (!button || !row?.dataset.urlTemplate) return;
       dialog.close();
-      if (choice.dataset.only === "favorites" && choice.dataset.url) {
-        playing = true;
-        if (toggleBtn) toggleBtn.textContent = "⏸ 一時停止";
-        htmx.ajax("get", choice.dataset.url, { target: deck, swap: "innerHTML" });
-      } else {
+      const index = button.dataset.start === "resume" ? Number(button.dataset.index) : 0;
+      const c = card();
+      if (c && currentFilter(c) === row.dataset.filter && Number(c.dataset.index) === index) {
         setPlaying(true);
+        return;
       }
+      playing = true;
+      if (toggleBtn) toggleBtn.textContent = "⏸ 一時停止";
+      htmx.ajax("get", row.dataset.urlTemplate.replace("{index}", String(index)), {
+        target: deck,
+        swap: "innerHTML",
+      });
     });
   }
 
@@ -184,6 +216,7 @@ const setupDeck = (deck: HTMLElement) => {
   document.body.addEventListener("htmx:afterSettle", (e) => {
     if (e.target !== deck) return;
     syncPosition();
+    saveProgress();
     if (playing) run();
     else playCurrentFace();
   });

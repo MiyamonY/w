@@ -18,7 +18,7 @@ export const Deck = (props: Props) => {
   if (!first) return <p class="text-sm text-neutral-500">単語がありません。</p>;
   return (
     <>
-      {favoritesCount !== undefined && favoritesCount > 0 && (
+      {favoritesCount !== undefined && (
         <StartDialog
           groupId={group.id}
           allCount={group.word_count}
@@ -27,6 +27,7 @@ export const Deck = (props: Props) => {
       )}
       <div
         id="deck"
+        data-group-id={String(group.id)}
         class="relative my-6 min-h-90 touch-pan-y overflow-hidden select-none"
         hx-target="#deck"
         hx-swap="innerHTML swap:250ms"

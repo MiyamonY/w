@@ -71,11 +71,15 @@ app.get("/groups/:id{[0-9]+}", async (c) => {
   if (!group) return c.notFound();
   const requested = StartIndexSchema.parse(c.req.query("start"));
   const start = group.word_count > 0 ? requested % group.word_count : 0;
-  const askFilter = c.req.query("start") === undefined && group.kind !== "favorites";
+  const showStartDialog = c.req.query("start") === undefined;
   const [first, settings, favoritesCount] = await Promise.all([
     group.word_count > 0 ? getWordAt(c.env.DB, id, start) : null,
     getSettings(c.env.DB),
-    askFilter ? countGroupFavorites(c.env.DB, id) : undefined,
+    !showStartDialog
+      ? undefined
+      : group.kind === "favorites"
+        ? 0
+        : countGroupFavorites(c.env.DB, id),
   ]);
   return c.html(
     <Player
