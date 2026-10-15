@@ -6,6 +6,7 @@ import {
   stopAudio,
 } from "../../helper/audio-player.client";
 import { formatPlaybackRate, parsePlaybackRate } from "../../helper/playback-rate";
+import { silenceUrl } from "../../helper/silence.client";
 
 type Dir = "prev" | "next";
 
@@ -13,7 +14,6 @@ const closest = (target: EventTarget | null, selector: string) =>
   target instanceof Element ? target.closest<HTMLElement>(selector) : null;
 
 const card = () => document.getElementById("card");
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const wordAudio = (c: HTMLElement) => (c.dataset.audio ? [c.dataset.audio] : []);
 const exampleAudios = (c: HTMLElement) =>
   [...c.querySelectorAll<HTMLElement>(".example[data-audio]")].flatMap(
@@ -26,6 +26,17 @@ const flip = (force?: boolean) => {
 
 const currentFilter = (c: HTMLElement) =>
   c.dataset.urlTemplate?.includes("only=favorites") ? "favorites" : "all";
+
+const updateMediaSession = () => {
+  const c = card();
+  if (!("mediaSession" in navigator) || !c) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: c.dataset.term ?? "",
+    artist: c.dataset.meaning ?? "",
+    album: document.title,
+    artwork: [{ src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }],
+  });
+};
 
 const setupDeck = (deck: HTMLElement) => {
   const frontMs = Number(deck.dataset.frontMs);
@@ -67,12 +78,19 @@ const setupDeck = (deck: HTMLElement) => {
     const c = card();
     if (!playing || !c) return;
     const withAudio = autoAudioOn();
+    const hold = async (srcs: string[], minMs: number) => {
+      const started = performance.now();
+      if (withAudio) await playQueue(srcs, my);
+      if (my !== gen) return;
+      const rest = minMs - (performance.now() - started);
+      if (rest >= 100) await playOne(silenceUrl(rest));
+    };
     if (!c.classList.contains("flipped")) {
-      await Promise.all([sleep(frontMs), withAudio && playQueue(frontAudios(c), my)]);
+      await hold(frontAudios(c), frontMs);
       if (my !== gen) return;
       flip(true);
     }
-    await Promise.all([sleep(backMs), withAudio && playQueue(backAudios(c), my)]);
+    await hold(backAudios(c), backMs);
     if (my !== gen) return;
     go("next");
   };
@@ -80,6 +98,8 @@ const setupDeck = (deck: HTMLElement) => {
   const setPlaying = (value: boolean) => {
     playing = value;
     if (toggleBtn) toggleBtn.textContent = playing ? "⏸ 一時停止" : "▶ 再生";
+    if ("mediaSession" in navigator)
+      navigator.mediaSession.playbackState = playing ? "playing" : "paused";
     if (playing) run();
     else stop();
   };
@@ -108,6 +128,23 @@ const setupDeck = (deck: HTMLElement) => {
     const index = Number(sessionStorage.getItem(progressKey(filter)));
     return Number.isInteger(index) && index > 0 && index < total ? index : null;
   };
+
+  if ("mediaSession" in navigator) {
+    const handlers: [MediaSessionAction, () => void][] = [
+      ["play", () => setPlaying(true)],
+      ["pause", () => setPlaying(false)],
+      ["nexttrack", () => go("next")],
+      ["previoustrack", () => go("prev")],
+    ];
+    for (const [action, handler] of handlers) {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch {
+        continue;
+      }
+    }
+    updateMediaSession();
+  }
 
   const dialog = document.getElementById("start-dialog") as HTMLDialogElement | null;
   if (dialog) {
@@ -217,6 +254,7 @@ const setupDeck = (deck: HTMLElement) => {
     if (e.target !== deck) return;
     syncPosition();
     saveProgress();
+    updateMediaSession();
     if (playing) run();
     else playCurrentFace();
   });
