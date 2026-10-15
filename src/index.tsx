@@ -23,6 +23,15 @@ import {
   TestRequestSchema,
 } from "./backend/passages";
 import {
+  answerQuestion,
+  ChoiceSchema,
+  countGroupQuestions,
+  createQuiz,
+  getQuiz,
+  listQuizzes,
+  QuizRequestSchema,
+} from "./backend/quizzes";
+import {
   CardFilterSchema,
   GroupFilterSchema,
   resolvePaging,
@@ -32,11 +41,15 @@ import { getSettings, SettingsSchema, updateSettings } from "./backend/settings"
 import { Card } from "./view/components/card";
 import { FavoriteButton, FavoriteButtonVariants } from "./view/components/favorite-button";
 import { TestForm } from "./view/components/test-form";
+import { QuizForm } from "./view/components/quiz-form";
+import { QuizQuestion } from "./view/components/quiz-question";
+import { QuizScore } from "./view/components/quiz-score";
 import { PagedWordTable } from "./view/components/paged-word-table";
 import { SettingsForm } from "./view/components/settings-form";
 import { AllWordList } from "./view/pages/all-word-list";
 import { GroupList } from "./view/pages/group-list";
 import { Player } from "./view/pages/player";
+import { QuizPage } from "./view/pages/quiz";
 import { SettingsPage } from "./view/pages/settings";
 import { TestPage } from "./view/pages/test";
 import { TestListPage } from "./view/pages/test-list";
@@ -144,11 +157,74 @@ app.get("/groups/:id{[0-9]+}/tests", async (c) => {
   const id = Number(c.req.param("id"));
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
-  const [favoritesCount, passages] = await Promise.all([
+  const [favoritesCount, passages, questionCount, quizzes] = await Promise.all([
     group.kind === "favorites" ? 0 : countGroupFavorites(c.env.DB, id),
     listPassages(c.env.DB, id),
+    countGroupQuestions(c.env.DB, id),
+    listQuizzes(c.env.DB, id),
   ]);
-  return c.html(<TestListPage group={group} favoritesCount={favoritesCount} passages={passages} />);
+  return c.html(
+    <TestListPage
+      group={group}
+      favoritesCount={favoritesCount}
+      passages={passages}
+      questionCount={questionCount}
+      quizzes={quizzes}
+    />,
+  );
+});
+
+app.post("/groups/:id{[0-9]+}/quizzes", async (c) => {
+  const id = Number(c.req.param("id"));
+  const group = await getGroup(c.env.DB, id);
+  if (!group) return c.notFound();
+  const { count, only } = QuizRequestSchema.parse(await c.req.parseBody());
+  const quizId = await createQuiz(c.env.DB, id, count, only);
+  if (quizId === null) {
+    const [favoritesCount, questionCount] = await Promise.all([
+      group.kind === "favorites" ? 0 : countGroupFavorites(c.env.DB, id),
+      countGroupQuestions(c.env.DB, id),
+    ]);
+    return c.html(
+      <QuizForm
+        groupId={id}
+        questionCount={questionCount}
+        favoritesCount={favoritesCount}
+        error="出題できる問題がありません。"
+      />,
+      422,
+    );
+  }
+  if (c.req.header("hx-request") === "true") {
+    c.header("HX-Redirect", `/quizzes/${quizId}`);
+    return c.body(null, 200);
+  }
+  return c.redirect(`/quizzes/${quizId}`, 303);
+});
+
+app.get("/quizzes/:id{[0-9]+}", async (c) => {
+  const quiz = await getQuiz(c.env.DB, Number(c.req.param("id")));
+  if (!quiz) return c.notFound();
+  return c.html(<QuizPage quiz={quiz} />);
+});
+
+app.post("/quizzes/:id{[0-9]+}/questions/:questionId{[0-9]+}/answer", async (c) => {
+  const quizId = Number(c.req.param("id"));
+  const input = ChoiceSchema.safeParse((await c.req.parseBody()).choice);
+  if (!input.success) return c.body(null, 400);
+  const result = await answerQuestion(
+    c.env.DB,
+    quizId,
+    Number(c.req.param("questionId")),
+    input.data,
+  );
+  if (!result) return c.notFound();
+  return c.html(
+    <>
+      <QuizQuestion quizId={quizId} question={result.question} />
+      <QuizScore score={result.score} oob />
+    </>,
+  );
 });
 
 app.post("/groups/:id{[0-9]+}/tests", async (c) => {
