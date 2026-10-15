@@ -7,7 +7,8 @@ import {
 } from "../../helper/audio-player.client";
 import { formatPlaybackRate, parsePlaybackRate } from "../../helper/playback-rate";
 import { silenceUrl } from "../../helper/silence.client";
-import { clamp, isIncludedIn, range, shuffle } from "remeda";
+import { parsePlayOrder } from "../../helper/play-order";
+import { clamp, range, shuffle } from "remeda";
 
 type Dir = "prev" | "next";
 
@@ -39,11 +40,7 @@ const updateMediaSession = () => {
   });
 };
 
-type PlayOrder = "forward" | "reverse" | "random";
-const PlayOrders: PlayOrder[] = ["forward", "reverse", "random"];
 const PlayOrderStorageKey = "playDirection";
-const parsePlayOrder = (value: string | null): PlayOrder =>
-  isIncludedIn(value, PlayOrders) ? value : "forward";
 
 const setupDeck = (deck: HTMLElement) => {
   const frontMs = Number(deck.dataset.frontMs);
@@ -59,15 +56,7 @@ const setupDeck = (deck: HTMLElement) => {
 
   const autoAudioOn = () => autoAudio?.checked ?? false;
 
-  const orderSelect = document.getElementById("play-direction") as HTMLSelectElement | null;
   let order = parsePlayOrder(localStorage.getItem(PlayOrderStorageKey));
-  if (orderSelect) {
-    orderSelect.value = order;
-    orderSelect.addEventListener("change", () => {
-      order = parsePlayOrder(orderSelect.value);
-      localStorage.setItem(PlayOrderStorageKey, order);
-    });
-  }
 
   let shuffled: number[] = [];
   let shuffledFor = "";
@@ -179,7 +168,6 @@ const setupDeck = (deck: HTMLElement) => {
   const dialog = document.getElementById("start-dialog") as HTMLDialogElement | null;
   if (dialog) {
     const rows = [...dialog.querySelectorAll<HTMLElement>("section[data-filter]")];
-    let canResume = false;
     for (const row of rows) {
       const total = Number(row.dataset.total);
       const index = savedIndex(row.dataset.filter ?? "all", total);
@@ -188,15 +176,22 @@ const setupDeck = (deck: HTMLElement) => {
       resume.hidden = false;
       resume.dataset.index = String(index);
       resume.textContent = `続きから（${index + 1} / ${total}）`;
-      canResume = true;
     }
-    if (rows.length > 1 || canResume) dialog.showModal();
+    const orderInput = dialog.querySelector<HTMLInputElement>(
+      `input[name="play-order"][value="${order}"]`,
+    );
+    if (orderInput) orderInput.checked = true;
+    dialog.showModal();
 
     dialog.addEventListener("click", (e) => {
       const button = closest(e.target, "[data-start]");
       const row = closest(e.target, "section[data-filter]");
       if (!button || !row?.dataset.urlTemplate) return;
       dialog.close();
+      order = parsePlayOrder(
+        dialog.querySelector<HTMLInputElement>('input[name="play-order"]:checked')?.value,
+      );
+      localStorage.setItem(PlayOrderStorageKey, order);
       const total = Number(row.dataset.total);
       const first =
         order === "reverse"
