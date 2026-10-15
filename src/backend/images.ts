@@ -21,12 +21,6 @@ const prompt = (word: ImageWord) =>
     .filter((line) => line.length > 0)
     .join("\n");
 
-const detectType = (bytes: Uint8Array) => {
-  if (bytes[0] === 0xff && bytes[1] === 0xd8) return { ext: "jpg", type: "image/jpeg" };
-  if (bytes[0] === 0x89 && bytes[1] === 0x50) return { ext: "png", type: "image/png" };
-  return { ext: "webp", type: "image/webp" };
-};
-
 export const claimImage = async (db: D1Database, wordId: number) => {
   const row = await db
     .prepare(
@@ -76,10 +70,21 @@ const requestImage = async (apiKey: string, model: string, word: ImageWord) => {
   return Uint8Array.from(atob(data[0].b64_json), (ch) => ch.charCodeAt(0));
 };
 
+const ImageSize = 256;
+
+const toThumbnail = async (images: ImagesBinding, bytes: Uint8Array) => {
+  const result = await images
+    .input(new Blob([bytes]).stream())
+    .transform({ width: ImageSize, height: ImageSize, fit: "cover" })
+    .output({ format: "image/webp", quality: 80 });
+  return result.response().arrayBuffer();
+};
+
 export const generateImage = async (
   env: unknown,
   db: D1Database,
   bucket: R2Bucket,
+  images: ImagesBinding,
   wordId: number,
 ): Promise<string | null> => {
   try {
@@ -87,9 +92,10 @@ export const generateImage = async (
     const word = await getImageWord(db, wordId);
     if (!word) throw new Error(`word ${wordId} が見つかりません`);
     const bytes = await requestImage(config.OPENAI_API_KEY, config.OPENAI_IMAGE_MODEL, word);
-    const { ext, type } = detectType(bytes);
-    const key = `images/${wordId}.${ext}`;
-    await bucket.put(key, bytes, { httpMetadata: { contentType: type } });
+    const key = `images/${wordId}.webp`;
+    await bucket.put(key, await toThumbnail(images, bytes), {
+      httpMetadata: { contentType: "image/webp" },
+    });
     await db
       .prepare(
         `UPDATE word_images SET status = 'done', image_key = ?, model = ?, updated_at = datetime('now')

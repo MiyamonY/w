@@ -28,4 +28,7 @@
       "bucket_name": "words-audio",
     },
   ],
+  "images": {
+    "binding": "IMAGES",
+  },
 }

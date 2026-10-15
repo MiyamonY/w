@@ -160,7 +160,7 @@ app.post("/words/:id{[0-9]+}/image", async (c) => {
   let key = await getImageKey(c.env.DB, wordId);
   if (!key) {
     if (!(await claimImage(c.env.DB, wordId))) return c.body(null, 204);
-    const generating = generateImage(c.env, c.env.DB, c.env.AUDIO, wordId);
+    const generating = generateImage(c.env, c.env.DB, c.env.AUDIO, c.env.IMAGES, wordId);
     c.executionCtx.waitUntil(generating);
     key = await generating;
   }
