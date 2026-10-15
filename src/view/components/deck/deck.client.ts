@@ -133,10 +133,10 @@ const setupDeck = (deck: HTMLElement) => {
   const progressKey = (filter: string) => `card-progress:${deck.dataset.groupId}:${filter}`;
   const saveProgress = () => {
     const c = card();
-    if (c) sessionStorage.setItem(progressKey(currentFilter(c)), c.dataset.index ?? "0");
+    if (c) localStorage.setItem(progressKey(currentFilter(c)), c.dataset.index ?? "0");
   };
   const savedIndex = (filter: string, total: number) => {
-    const index = Number(sessionStorage.getItem(progressKey(filter)));
+    const index = Number(localStorage.getItem(progressKey(filter)));
     return Number.isInteger(index) && index > 0 && index < total ? index : null;
   };
 
