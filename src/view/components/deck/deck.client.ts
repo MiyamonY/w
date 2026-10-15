@@ -38,6 +38,20 @@ const updateMediaSession = () => {
   });
 };
 
+type PlayOrder = "forward" | "reverse" | "random";
+const PlayOrders: PlayOrder[] = ["forward", "reverse", "random"];
+const PlayOrderStorageKey = "playDirection";
+const parsePlayOrder = (value: string | null): PlayOrder =>
+  PlayOrders.find((o) => o === value) ?? "forward";
+
+const shuffle = <T>(items: T[]) => {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+};
+
 const setupDeck = (deck: HTMLElement) => {
   const frontMs = Number(deck.dataset.frontMs);
   const backMs = Number(deck.dataset.backMs);
@@ -52,16 +66,28 @@ const setupDeck = (deck: HTMLElement) => {
 
   const autoAudioOn = () => autoAudio?.checked ?? false;
 
-  const directionSelect = document.getElementById("play-direction") as HTMLSelectElement | null;
-  const DirectionStorageKey = "playDirection";
-  let reverse = localStorage.getItem(DirectionStorageKey) === "reverse";
-  if (directionSelect) {
-    directionSelect.value = reverse ? "reverse" : "forward";
-    directionSelect.addEventListener("change", () => {
-      reverse = directionSelect.value === "reverse";
-      localStorage.setItem(DirectionStorageKey, reverse ? "reverse" : "forward");
+  const orderSelect = document.getElementById("play-direction") as HTMLSelectElement | null;
+  let order = parsePlayOrder(localStorage.getItem(PlayOrderStorageKey));
+  if (orderSelect) {
+    orderSelect.value = order;
+    orderSelect.addEventListener("change", () => {
+      order = parsePlayOrder(orderSelect.value);
+      localStorage.setItem(PlayOrderStorageKey, order);
     });
   }
+
+  let shuffled: number[] = [];
+  let shuffledFor = "";
+  const nextRandomIndex = (c: HTMLElement) => {
+    const total = Number(c.dataset.total);
+    const current = Number(c.dataset.index);
+    const key = `${currentFilter(c)}:${total}`;
+    if (shuffledFor !== key || shuffled.length === 0) {
+      shuffled = shuffle([...Array(total).keys()].filter((i) => i !== current));
+      shuffledFor = key;
+    }
+    return shuffled.pop() ?? current;
+  };
 
   const rateSelect = document.getElementById("playback-rate") as HTMLSelectElement | null;
   if (rateSelect) {
@@ -103,7 +129,7 @@ const setupDeck = (deck: HTMLElement) => {
     }
     await hold(backAudios(c), backMs);
     if (my !== gen) return;
-    go(reverse ? "prev" : "next");
+    advance();
   };
 
   const setPlaying = (value: boolean) => {
@@ -178,7 +204,13 @@ const setupDeck = (deck: HTMLElement) => {
       const row = closest(e.target, "section[data-filter]");
       if (!button || !row?.dataset.urlTemplate) return;
       dialog.close();
-      const first = reverse ? Number(row.dataset.total) - 1 : 0;
+      const total = Number(row.dataset.total);
+      const first =
+        order === "reverse"
+          ? total - 1
+          : order === "random"
+            ? Math.floor(Math.random() * total)
+            : 0;
       const index = button.dataset.start === "resume" ? Number(button.dataset.index) : first;
       const c = card();
       if (c && currentFilter(c) === row.dataset.filter && Number(c.dataset.index) === index) {
@@ -231,6 +263,15 @@ const setupDeck = (deck: HTMLElement) => {
     const index = Number(c.dataset.index);
     const total = Number(c.dataset.total);
     loadCard(dir === "next" ? (index + 1) % total : (index - 1 + total) % total, dir);
+  };
+
+  const advance = () => {
+    const c = card();
+    if (!c) return;
+    if (order === "reverse") go("prev");
+    else if (order === "random" && Number(c.dataset.total) > 1)
+      loadCard(nextRandomIndex(c), "next");
+    else go("next");
   };
 
   for (const button of document.querySelectorAll<HTMLElement>("[data-nav-button]")) {

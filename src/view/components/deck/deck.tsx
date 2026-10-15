@@ -75,6 +75,7 @@ export const Deck = (props: Props) => {
               順方向
             </option>
             <option value="reverse">逆方向</option>
+            <option value="random">ランダム</option>
           </select>
         </label>
       </div>
