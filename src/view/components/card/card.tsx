@@ -16,7 +16,7 @@ type Props = {
 };
 
 const Face =
-  "col-start-1 row-start-1 flex min-h-90 flex-col items-center justify-center gap-3 rounded-2xl bg-white p-6 text-center shadow-lg backface-hidden transition-transform duration-400";
+  "absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white p-6 text-center shadow-lg backface-hidden transition-transform duration-400";
 
 export const Card = (props: Props) => {
   const { groupId, index, total, word, showExamplesOnFront, filter = "all" } = props;
@@ -25,7 +25,7 @@ export const Card = (props: Props) => {
   return (
     <article
       id="card"
-      class="flex flex-col transition-[translate,rotate,opacity] duration-250 swap-in-next:translate-x-[110%] swap-in-next:opacity-0 swap-in-prev:-translate-x-[110%] swap-in-prev:opacity-0 swap-out-next:-translate-x-[110%] swap-out-next:-rotate-6 swap-out-next:opacity-0 swap-out-prev:translate-x-[110%] swap-out-prev:rotate-6 swap-out-prev:opacity-0"
+      class="flex h-105 flex-col transition-[translate,rotate,opacity] duration-250 swap-in-next:translate-x-[110%] swap-in-next:opacity-0 swap-in-prev:-translate-x-[110%] swap-in-prev:opacity-0 swap-out-next:-translate-x-[110%] swap-out-next:-rotate-6 swap-out-next:opacity-0 swap-out-prev:translate-x-[110%] swap-out-prev:rotate-6 swap-out-prev:opacity-0"
       data-audio={audioUrl(word.audio_key)}
       data-term={word.term}
       data-meaning={word.meaning}
@@ -33,7 +33,7 @@ export const Card = (props: Props) => {
       data-total={String(total)}
       data-url-template={cardUrl(0).replace("/cards/0", "/cards/{index}")}
     >
-      <div class="relative grid flex-1 cursor-pointer perspective-[1000px]">
+      <div class="relative flex-1 cursor-pointer perspective-[1000px]">
         <FavoriteButton wordId={word.id} favorite={word.favorite} variant="corner" />
         <div class={`${Face} flipped:-rotate-y-180`}>
           {word.numbers.length > 0 && (
@@ -58,7 +58,7 @@ export const Card = (props: Props) => {
             </ul>
           )}
         </div>
-        <div class={`${Face} rotate-y-180 flipped:rotate-y-0`}>
+        <div class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}>
           <div class="flex items-center gap-1">
             <div class="text-xl font-medium text-neutral-500">{word.term}</div>
             {word.ipa && <div class="text-neutral-400">/{word.ipa}/</div>}

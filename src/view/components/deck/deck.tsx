@@ -28,7 +28,7 @@ export const Deck = (props: Props) => {
       <div
         id="deck"
         data-group-id={String(group.id)}
-        class="relative my-6 min-h-90 touch-pan-y overflow-hidden select-none"
+        class="relative my-6 min-h-105 touch-pan-y overflow-hidden select-none"
         hx-target="#deck"
         hx-swap="innerHTML swap:250ms"
         data-front-ms={String(settings.front_ms)}
