@@ -40,12 +40,10 @@ export const GroupList = (props: Props) => {
                   <span class="col-span-full text-sm text-neutral-500">{g.description}</span>
                 )}
               </a>
-              <a
-                href={wordsUrl({ group: g.id })}
-                class="absolute top-1/2 right-4 -translate-y-1/2 text-sm text-blue-700"
-              >
-                単語リスト
-              </a>
+              <div class="absolute top-1/2 right-4 flex -translate-y-1/2 flex-col items-end gap-1 text-sm text-blue-700">
+                <a href={wordsUrl({ group: g.id })}>単語リスト</a>
+                <a href={`/groups/${g.id}/tests`}>テスト</a>
+              </div>
             </li>
           ))}
         </ul>

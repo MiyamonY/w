@@ -13,6 +13,15 @@ import {
 } from "./backend/db";
 import { serveAudio } from "./backend/audio";
 import { requireAccess } from "./backend/auth";
+import { generatePassage, PassageError } from "./backend/openai";
+import {
+  createPassage,
+  getPassage,
+  listPassages,
+  markRevealed,
+  pickTestWords,
+  TestRequestSchema,
+} from "./backend/passages";
 import {
   CardFilterSchema,
   GroupFilterSchema,
@@ -22,12 +31,15 @@ import {
 import { getSettings, SettingsSchema, updateSettings } from "./backend/settings";
 import { Card } from "./view/components/card";
 import { FavoriteButton, FavoriteButtonVariants } from "./view/components/favorite-button";
+import { TestForm } from "./view/components/test-form";
 import { PagedWordTable } from "./view/components/paged-word-table";
 import { SettingsForm } from "./view/components/settings-form";
 import { AllWordList } from "./view/pages/all-word-list";
 import { GroupList } from "./view/pages/group-list";
 import { Player } from "./view/pages/player";
 import { SettingsPage } from "./view/pages/settings";
+import { TestPage } from "./view/pages/test";
+import { TestListPage } from "./view/pages/test-list";
 import { wordsUrl } from "./view/helper/words-url";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -126,6 +138,57 @@ app.post("/words/:id{[0-9]+}/favorite", async (c) => {
   const variant = z.enum(FavoriteButtonVariants).catch("inline").parse(c.req.query("variant"));
   const favorite = await toggleFavorite(c.env.DB, wordId);
   return c.html(<FavoriteButton wordId={wordId} favorite={favorite} variant={variant} />);
+});
+
+app.get("/groups/:id{[0-9]+}/tests", async (c) => {
+  const id = Number(c.req.param("id"));
+  const group = await getGroup(c.env.DB, id);
+  if (!group) return c.notFound();
+  const [favoritesCount, passages] = await Promise.all([
+    group.kind === "favorites" ? 0 : countGroupFavorites(c.env.DB, id),
+    listPassages(c.env.DB, id),
+  ]);
+  return c.html(<TestListPage group={group} favoritesCount={favoritesCount} passages={passages} />);
+});
+
+app.post("/groups/:id{[0-9]+}/tests", async (c) => {
+  const id = Number(c.req.param("id"));
+  const group = await getGroup(c.env.DB, id);
+  if (!group) return c.notFound();
+  const favoritesCount = group.kind === "favorites" ? 0 : await countGroupFavorites(c.env.DB, id);
+  const fail = (error: string) =>
+    c.html(<TestForm groupId={id} favoritesCount={favoritesCount} error={error} />, 422);
+
+  const { count, only } = TestRequestSchema.parse(await c.req.parseBody());
+  const words = await pickTestWords(c.env.DB, id, count, only);
+  if (words.length === 0) return fail("出題できる単語がありません。");
+  try {
+    const generated = await generatePassage(c.env, words);
+    const passageId = await createPassage(c.env.DB, {
+      groupId: id,
+      ...generated,
+      wordIds: words.map((w) => w.id),
+    });
+    if (c.req.header("hx-request") === "true") {
+      c.header("HX-Redirect", `/tests/${passageId}`);
+      return c.body(null, 200);
+    }
+    return c.redirect(`/tests/${passageId}`, 303);
+  } catch (e) {
+    if (e instanceof PassageError) return fail(e.message);
+    throw e;
+  }
+});
+
+app.get("/tests/:id{[0-9]+}", async (c) => {
+  const passage = await getPassage(c.env.DB, Number(c.req.param("id")));
+  if (!passage) return c.notFound();
+  return c.html(<TestPage passage={passage} />);
+});
+
+app.post("/tests/:id{[0-9]+}/words/:wordId{[0-9]+}/reveal", async (c) => {
+  await markRevealed(c.env.DB, Number(c.req.param("id")), Number(c.req.param("wordId")));
+  return c.body(null, 204);
 });
 
 app.get("/settings", async (c) => {

@@ -89,7 +89,7 @@ const GroupsJson = `
             WHERE x.word_id = w.id
             ORDER BY g.sort_order, g.id)) AS groups_json`;
 
-const IsFavorite = `EXISTS (SELECT 1 FROM group_words fx JOIN word_groups fg ON fg.id = fx.group_id
+export const IsFavorite = `EXISTS (SELECT 1 FROM group_words fx JOIN word_groups fg ON fg.id = fx.group_id
            WHERE fg.kind = 'favorites' AND fx.word_id = w.id)`;
 
 const FavoriteColumn = `${IsFavorite} AS favorite`;

@@ -34,6 +34,8 @@ export default defineConfig(({ command }) => {
       tailwindcss(),
       cloudflare({
         config: (config) => {
+          const openaiModel = process.env.WORKER_OPENAI_MODEL;
+          if (openaiModel) config.vars = { ...config.vars, OPENAI_MODEL: openaiModel };
           if (!env) return;
           if (env.WORKER_DOMAIN) {
             config.routes = [{ pattern: env.WORKER_DOMAIN, custom_domain: true }];
