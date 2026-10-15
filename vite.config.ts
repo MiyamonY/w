@@ -36,6 +36,8 @@ export default defineConfig(({ command }) => {
         config: (config) => {
           const openaiModel = process.env.WORKER_OPENAI_MODEL;
           if (openaiModel) config.vars = { ...config.vars, OPENAI_MODEL: openaiModel };
+          const imageModel = process.env.WORKER_OPENAI_IMAGE_MODEL;
+          if (imageModel) config.vars = { ...config.vars, OPENAI_IMAGE_MODEL: imageModel };
           if (!env) return;
           if (env.WORKER_DOMAIN) {
             config.routes = [{ pattern: env.WORKER_DOMAIN, custom_domain: true }];

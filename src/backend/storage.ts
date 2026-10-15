@@ -1,6 +1,6 @@
 import { clamp } from "remeda";
 
-export const serveAudio = async (
+export const serveObject = async (
   bucket: R2Bucket,
   key: string,
   req: Request,

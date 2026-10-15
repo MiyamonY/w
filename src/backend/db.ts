@@ -25,6 +25,7 @@ export type Word = {
   ipa: string | null;
   meaning: string;
   audio_key: string | null;
+  image_key: string | null;
   examples: Example[];
   numbers: SourceNumber[];
   favorite: boolean;
@@ -94,7 +95,9 @@ export const IsFavorite = `EXISTS (SELECT 1 FROM group_words fx JOIN word_groups
 
 const FavoriteColumn = `${IsFavorite} AS favorite`;
 
-const WordColumns = `w.id, w.term, w.ipa, w.meaning, w.audio_key, ${ExamplesJson}, ${NumbersJson}, ${FavoriteColumn}`;
+const ImageKey = `(SELECT wi.image_key FROM word_images wi WHERE wi.word_id = w.id AND wi.status = 'done') AS image_key`;
+
+const WordColumns = `w.id, w.term, w.ipa, w.meaning, w.audio_key, ${ImageKey}, ${ExamplesJson}, ${NumbersJson}, ${FavoriteColumn}`;
 
 type WordRow = Omit<Word, "examples" | "numbers" | "favorite"> & {
   examples_json: string;

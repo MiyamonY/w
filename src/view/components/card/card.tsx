@@ -4,6 +4,7 @@ import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
 import { FavoriteButton } from "../favorite-button";
 import { SpeakButton } from "../speak-button";
+import { WordImage } from "../word-image";
 
 type Props = {
   groupId: number;
@@ -67,6 +68,7 @@ export const Card = (props: Props) => {
               class="cursor-pointer p-1 leading-none"
             />
           </div>
+          <WordImage wordId={word.id} imageKey={word.image_key} />
           <div class="text-3xl font-semibold">{word.meaning}</div>
           {word.examples.length > 0 && <Examples examples={word.examples} />}
         </div>
