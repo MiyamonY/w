@@ -1,3 +1,4 @@
+import { clamp } from "remeda";
 import type { Paging } from "../../../backend/paging";
 
 type Props = {
@@ -24,7 +25,7 @@ export const Pagination = (props: Props) => {
       </span>
     );
   const from = total === 0 ? 0 : offset + 1;
-  const to = Math.min(offset + per, total);
+  const to = clamp(offset + per, { max: total });
 
   return (
     <nav class="my-4 flex flex-wrap items-center justify-between gap-3 text-sm">

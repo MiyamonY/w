@@ -24,6 +24,8 @@ export const Card = (props: Props) => {
 関数はコンポーネント・補助関数・ブラウザ側のコードとも `const` + アロー関数で書く。`const` は巻き上げられないので、呼び出しは定義より後に置く。
 
 定数（固定の数値・文字列）は PascalCase で書く: `const FrontMs = 3000;`。環境変数名（`env.ACCESS_AUD` など、`wrangler.jsonc` / `.dev.vars` で決まる名前）はそのまま使う。
+
+配列・数値・オブジェクトの汎用的な処理（範囲への丸め、連番、シャッフル、値の絞り込みなど）は自前で書かず remeda の関数を使う（例: `clamp(n, { min: 1, max })`、`range(0, n)`、`shuffle(items)`、`pickBy(obj, isDefined)`）。配列の `map` / `filter` のような標準のメソッドはそのまま使ってよい。
 新しいコンポーネントは既存ファイルに足さず、新しいファイルを作る。
 
 - ファイル名はコンポーネント名のケバブケース: `WordTable` → `word-table.tsx`

@@ -7,6 +7,7 @@ import {
 } from "../../helper/audio-player.client";
 import { formatPlaybackRate, parsePlaybackRate } from "../../helper/playback-rate";
 import { silenceUrl } from "../../helper/silence.client";
+import { clamp, isIncludedIn, range, shuffle } from "remeda";
 
 type Dir = "prev" | "next";
 
@@ -42,15 +43,7 @@ type PlayOrder = "forward" | "reverse" | "random";
 const PlayOrders: PlayOrder[] = ["forward", "reverse", "random"];
 const PlayOrderStorageKey = "playDirection";
 const parsePlayOrder = (value: string | null): PlayOrder =>
-  PlayOrders.find((o) => o === value) ?? "forward";
-
-const shuffle = <T>(items: T[]) => {
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [items[i], items[j]] = [items[j], items[i]];
-  }
-  return items;
-};
+  isIncludedIn(value, PlayOrders) ? value : "forward";
 
 const setupDeck = (deck: HTMLElement) => {
   const frontMs = Number(deck.dataset.frontMs);
@@ -83,7 +76,7 @@ const setupDeck = (deck: HTMLElement) => {
     const current = Number(c.dataset.index);
     const key = `${currentFilter(c)}:${total}`;
     if (shuffledFor !== key || shuffled.length === 0) {
-      shuffled = shuffle([...Array(total).keys()].filter((i) => i !== current));
+      shuffled = shuffle(range(0, total).filter((i) => i !== current));
       shuffledFor = key;
     }
     return shuffled.pop() ?? current;
@@ -284,7 +277,7 @@ const setupDeck = (deck: HTMLElement) => {
     const c = card();
     if (!c || !Number.isFinite(position)) return syncPosition();
     const current = Number(c.dataset.index);
-    const index = Math.min(Math.max(Math.round(position), 1), Number(c.dataset.total)) - 1;
+    const index = clamp(Math.round(position), { min: 1, max: Number(c.dataset.total) }) - 1;
     if (index === current) return syncPosition();
     loadCard(index, index > current ? "next" : "prev");
   };

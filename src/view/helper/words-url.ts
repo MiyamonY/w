@@ -1,3 +1,5 @@
+import { isDefined, mapValues, pickBy } from "remeda";
+
 export type WordsQuery = {
   group?: number;
   page?: number;
@@ -5,10 +7,6 @@ export type WordsQuery = {
 };
 
 export const wordsUrl = (query: WordsQuery) => {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined) params.set(key, String(value));
-  }
-  const search = params.toString();
+  const search = new URLSearchParams(mapValues(pickBy(query, isDefined), String)).toString();
   return search ? `/words?${search}` : "/words";
 };

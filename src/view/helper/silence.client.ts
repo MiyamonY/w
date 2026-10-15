@@ -1,9 +1,11 @@
+import { clamp } from "remeda";
+
 const SampleRate = 8000;
 const NoiseAmplitude = 8;
 const cache = new Map<number, string>();
 
 export const silenceUrl = (ms: number) => {
-  const rounded = Math.max(100, Math.round(ms / 100) * 100);
+  const rounded = clamp(Math.round(ms / 100) * 100, { min: 100 });
   const length = (SampleRate * rounded) / 1000;
   const cached = cache.get(length);
   if (cached) return cached;

@@ -1,3 +1,5 @@
+import { clamp } from "remeda";
+
 export const serveAudio = async (
   bucket: R2Bucket,
   key: string,
@@ -26,9 +28,9 @@ export const serveAudio = async (
 const resolveRange = (range: R2Range, size: number): { start: number; end: number } => {
   const { offset, length, suffix } = range as { offset?: number; length?: number; suffix?: number };
   if (typeof suffix === "number") {
-    return { start: Math.max(size - suffix, 0), end: size - 1 };
+    return { start: clamp(size - suffix, { min: 0 }), end: size - 1 };
   }
   const start = typeof offset === "number" ? offset : 0;
-  const end = typeof length === "number" ? Math.min(start + length, size) - 1 : size - 1;
+  const end = typeof length === "number" ? clamp(start + length, { max: size }) - 1 : size - 1;
   return { start, end };
 };

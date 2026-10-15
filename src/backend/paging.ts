@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { clamp } from "remeda";
 
 export const PerPageOptions = [10, 50, 100, 500] as const;
 export const DefaultPerPage = 50;
@@ -24,7 +25,7 @@ export const GroupFilterSchema = z.coerce.number().int().positive().optional().c
 
 export const resolvePaging = (query: Record<string, string>, total: number): Paging => {
   const { page: requestedPage, per } = PagingQuerySchema.parse(query);
-  const pages = Math.max(1, Math.ceil(total / per));
-  const page = Math.min(requestedPage, pages);
+  const pages = clamp(Math.ceil(total / per), { min: 1 });
+  const page = clamp(requestedPage, { max: pages });
   return { page, per, pages, total, offset: (page - 1) * per };
 };
