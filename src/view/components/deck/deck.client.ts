@@ -52,6 +52,17 @@ const setupDeck = (deck: HTMLElement) => {
 
   const autoAudioOn = () => autoAudio?.checked ?? false;
 
+  const directionSelect = document.getElementById("play-direction") as HTMLSelectElement | null;
+  const DirectionStorageKey = "playDirection";
+  let reverse = localStorage.getItem(DirectionStorageKey) === "reverse";
+  if (directionSelect) {
+    directionSelect.value = reverse ? "reverse" : "forward";
+    directionSelect.addEventListener("change", () => {
+      reverse = directionSelect.value === "reverse";
+      localStorage.setItem(DirectionStorageKey, reverse ? "reverse" : "forward");
+    });
+  }
+
   const rateSelect = document.getElementById("playback-rate") as HTMLSelectElement | null;
   if (rateSelect) {
     rateSelect.value = formatPlaybackRate(currentPlaybackRate());
@@ -92,7 +103,7 @@ const setupDeck = (deck: HTMLElement) => {
     }
     await hold(backAudios(c), backMs);
     if (my !== gen) return;
-    go("next");
+    go(reverse ? "prev" : "next");
   };
 
   const setPlaying = (value: boolean) => {
@@ -167,7 +178,8 @@ const setupDeck = (deck: HTMLElement) => {
       const row = closest(e.target, "section[data-filter]");
       if (!button || !row?.dataset.urlTemplate) return;
       dialog.close();
-      const index = button.dataset.start === "resume" ? Number(button.dataset.index) : 0;
+      const first = reverse ? Number(row.dataset.total) - 1 : 0;
+      const index = button.dataset.start === "resume" ? Number(button.dataset.index) : first;
       const c = card();
       if (c && currentFilter(c) === row.dataset.filter && Number(c.dataset.index) === index) {
         setPlaying(true);

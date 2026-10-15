@@ -68,6 +68,15 @@ export const Deck = (props: Props) => {
             ))}
           </select>
         </label>
+        <label class="flex items-center gap-1.5">
+          順番
+          <select id="play-direction" class="rounded-md border border-neutral-300 bg-white p-1">
+            <option value="forward" selected>
+              順方向
+            </option>
+            <option value="reverse">逆方向</option>
+          </select>
+        </label>
       </div>
       <nav class="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white/95 backdrop-blur">
         <div class="mx-auto grid max-w-140 grid-cols-2">
