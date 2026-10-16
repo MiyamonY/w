@@ -1,9 +1,9 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 
 export const MinDisplayMs = 500;
 export const MaxDisplayMs = 60000;
 
-const DisplayMsSchema = z.number().int().min(MinDisplayMs).max(MaxDisplayMs);
+const DisplayMsSchema = z.int().check(z.minimum(MinDisplayMs), z.maximum(MaxDisplayMs));
 
 export const SettingsSchema = z.object({
   front_ms: DisplayMsSchema,
@@ -13,8 +13,11 @@ export const SettingsSchema = z.object({
 
 export type Settings = z.infer<typeof SettingsSchema>;
 
-const SettingsRowSchema = SettingsSchema.extend({
-  show_examples_on_front: z.union([z.literal(0), z.literal(1)]).transform((v) => v === 1),
+const SettingsRowSchema = z.extend(SettingsSchema, {
+  show_examples_on_front: z.pipe(
+    z.literal([0, 1]),
+    z.transform((v) => v === 1),
+  ),
 });
 
 const DefaultSettings: Settings = { front_ms: 3000, back_ms: 3000, show_examples_on_front: false };

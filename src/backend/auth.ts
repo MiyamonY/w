@@ -1,10 +1,10 @@
 import { createMiddleware } from "hono/factory";
 import { verifyWithJwks } from "hono/jwt";
-import { z } from "zod";
+import { z } from "zod/mini";
 
 const AccessEnvSchema = z.object({
-  ACCESS_TEAM_DOMAIN: z.string().min(1),
-  ACCESS_AUD: z.string().min(1),
+  ACCESS_TEAM_DOMAIN: z.string().check(z.minLength(1)),
+  ACCESS_AUD: z.string().check(z.minLength(1)),
 });
 
 export const requireAccess = createMiddleware<{ Bindings: Env }>(async (c, next) => {

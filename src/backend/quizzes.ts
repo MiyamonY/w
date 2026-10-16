@@ -1,15 +1,16 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 import { type CardFilter, IsFavorite } from "./db";
+import { CardFilterSchema, coercedInt, coercedLiteral } from "./paging";
 
 export const QuizQuestionCounts = [10, 20, 30, 50] as const;
 export const DefaultQuizQuestionCount = 10;
 
 export const QuizRequestSchema = z.object({
-  count: z.coerce.number().pipe(z.literal(QuizQuestionCounts)).catch(DefaultQuizQuestionCount),
-  only: z.enum(["all", "favorites"]).catch("all"),
+  count: coercedLiteral(QuizQuestionCounts, DefaultQuizQuestionCount),
+  only: CardFilterSchema,
 });
 
-export const ChoiceSchema = z.coerce.number().int().min(0).max(3);
+export const ChoiceSchema = coercedInt(0, 3);
 
 const StringsSchema = z.array(z.string());
 

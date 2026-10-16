@@ -1,5 +1,6 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 import { type CardFilter, IsFavorite } from "./db";
+import { CardFilterSchema, coercedLiteral } from "./paging";
 
 const Marker = /\{\{(\d+)\|([^{}]+)\}\}/g;
 
@@ -29,8 +30,8 @@ export const TestWordCounts = [5, 10, 15, 20] as const;
 export const DefaultTestWordCount = 10;
 
 export const TestRequestSchema = z.object({
-  count: z.coerce.number().pipe(z.literal(TestWordCounts)).catch(DefaultTestWordCount),
-  only: z.enum(["all", "favorites"]).catch("all"),
+  count: coercedLiteral(TestWordCounts, DefaultTestWordCount),
+  only: CardFilterSchema,
 });
 
 export type PassageSummary = {

@@ -1,12 +1,12 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 
 const ImageEnvSchema = z.object({
-  OPENAI_API_KEY: z.string().min(1),
-  OPENAI_IMAGE_MODEL: z.string().min(1),
+  OPENAI_API_KEY: z.string().check(z.minLength(1)),
+  OPENAI_IMAGE_MODEL: z.string().check(z.minLength(1)),
 });
 
 const ImageResponseSchema = z.object({
-  data: z.array(z.object({ b64_json: z.string().min(1) })).min(1),
+  data: z.array(z.object({ b64_json: z.string().check(z.minLength(1)) })).check(z.minLength(1)),
 });
 
 type ImageWord = { id: number; term: string; meaning: string; example: string | null };

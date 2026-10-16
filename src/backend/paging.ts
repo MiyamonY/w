@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 import { clamp } from "remeda";
 
 export const PerPageOptions = [10, 50, 100, 500] as const;
@@ -12,16 +12,22 @@ export type Paging = {
   offset: number;
 };
 
+export const coercedInt = (min: number, max = Number.MAX_SAFE_INTEGER) =>
+  z.pipe(z.coerce.number(), z.int().check(z.minimum(min), z.maximum(max)));
+
+export const coercedLiteral = <T extends readonly number[]>(values: T, fallback: T[number]) =>
+  z.catch(z.pipe(z.coerce.number(), z.literal(values)), fallback);
+
+export const CardFilterSchema = z.catch(z.enum(["all", "favorites"]), "all");
+
 const PagingQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).catch(1),
-  per: z.coerce.number().pipe(z.literal(PerPageOptions)).catch(DefaultPerPage),
+  page: z.catch(coercedInt(1), 1),
+  per: coercedLiteral(PerPageOptions, DefaultPerPage),
 });
 
-export const StartIndexSchema = z.coerce.number().int().min(0).catch(0);
+export const StartIndexSchema = z.catch(coercedInt(0), 0);
 
-export const CardFilterSchema = z.enum(["all", "favorites"]).catch("all");
-
-export const GroupFilterSchema = z.coerce.number().int().positive().optional().catch(undefined);
+export const GroupFilterSchema = z.catch(z.optional(coercedInt(1)), undefined);
 
 export const resolvePaging = (query: Record<string, string>, total: number): Paging => {
   const { page: requestedPage, per } = PagingQuerySchema.parse(query);

@@ -1,17 +1,21 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
-import { z } from "zod";
+import { z } from "zod/mini";
 
 const EnvSchema = z.object({
-  WORKER_DOMAIN: z.hostname().optional(),
+  WORKER_DOMAIN: z.optional(z.hostname()),
   WORKER_D1_DATABASE_ID: z.uuid(),
-  WORKER_ACCESS_TEAM_DOMAIN: z.string().regex(/^[a-z0-9-]+\.cloudflareaccess\.com$/, {
-    error: "<team>.cloudflareaccess.com の形式で指定してください",
-  }),
-  WORKER_ACCESS_AUD: z.string().regex(/^[0-9a-f]{64}$/, {
-    error: "64桁の16進数（Application Audience Tag）を指定してください",
-  }),
+  WORKER_ACCESS_TEAM_DOMAIN: z.string().check(
+    z.regex(/^[a-z0-9-]+\.cloudflareaccess\.com$/, {
+      error: "<team>.cloudflareaccess.com の形式で指定してください",
+    }),
+  ),
+  WORKER_ACCESS_AUD: z.string().check(
+    z.regex(/^[0-9a-f]{64}$/, {
+      error: "64桁の16進数（Application Audience Tag）を指定してください",
+    }),
+  ),
 });
 
 const loadEnv = () => {

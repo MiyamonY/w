@@ -1,6 +1,6 @@
 import { type Context, Hono } from "hono";
 import { csrf } from "hono/csrf";
-import { z } from "zod";
+import { z } from "zod/mini";
 import {
   countGroupFavorites,
   countWords,
@@ -150,7 +150,7 @@ app.get("/groups/:id{[0-9]+}/cards/:index{[0-9]+}", async (c) => {
 
 app.post("/words/:id{[0-9]+}/favorite", async (c) => {
   const wordId = Number(c.req.param("id"));
-  const variant = z.enum(FavoriteButtonVariants).catch("inline").parse(c.req.query("variant"));
+  const variant = z.catch(z.enum(FavoriteButtonVariants), "inline").parse(c.req.query("variant"));
   const favorite = await toggleFavorite(c.env.DB, wordId);
   return c.html(<FavoriteButton wordId={wordId} favorite={favorite} variant={variant} />);
 });

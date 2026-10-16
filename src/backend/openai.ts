@@ -1,18 +1,18 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 import { usedWordNumbers } from "./passages";
 
 const OpenAIEnvSchema = z.object({
-  OPENAI_API_KEY: z.string().min(1),
-  OPENAI_MODEL: z.string().min(1),
+  OPENAI_API_KEY: z.string().check(z.minLength(1)),
+  OPENAI_MODEL: z.string().check(z.minLength(1)),
 });
 
 const PassageSchema = z.object({
-  title: z.string().min(1),
-  passage: z.string().min(1),
+  title: z.string().check(z.minLength(1)),
+  passage: z.string().check(z.minLength(1)),
 });
 
 const CompletionSchema = z.object({
-  choices: z.array(z.object({ message: z.object({ content: z.string() }) })).min(1),
+  choices: z.array(z.object({ message: z.object({ content: z.string() }) })).check(z.minLength(1)),
 });
 
 export type TargetWord = { term: string; meaning: string };
