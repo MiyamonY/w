@@ -7,8 +7,13 @@ import {
 } from "../../helper/audio-player.client";
 import { formatPlaybackRate, parsePlaybackRate } from "../../helper/playback-rate";
 import { silenceUrl } from "../../helper/silence.client";
-import { parsePlayOrder } from "../../helper/play-order";
-import { clamp, range, shuffle } from "remeda";
+import {
+  type PlayOrder,
+  PlayOrderLabels,
+  PlayOrders,
+  parsePlayOrder,
+} from "../../helper/play-order";
+import { clamp, isIncludedIn, range, reverse, shuffle } from "remeda";
 
 type Dir = "prev" | "next";
 
@@ -42,6 +47,30 @@ const updateMediaSession = () => {
 
 const PlayOrderStorageKey = "playDirection";
 
+const buildSequence = (order: PlayOrder, total: number) =>
+  order === "reverse"
+    ? reverse(range(0, total))
+    : order === "random"
+      ? shuffle(range(0, total))
+      : range(0, total);
+
+type Progress = { order: PlayOrder; step: number; sequence: number[] };
+
+const isIndex = (value: unknown, total: number): value is number =>
+  Number.isInteger(value) && (value as number) >= 0 && (value as number) < total;
+
+const parseProgress = (value: string | null, total: number): Progress | null => {
+  try {
+    const { order, step, sequence } = JSON.parse(value ?? "") as Partial<Progress>;
+    if (!isIncludedIn(order, PlayOrders) || !isIndex(step, total) || step === 0) return null;
+    if (!Array.isArray(sequence) || sequence.length !== total) return null;
+    if (!sequence.every((i) => isIndex(i, total))) return null;
+    return { order, step, sequence };
+  } catch {
+    return null;
+  }
+};
+
 const setupDeck = (deck: HTMLElement) => {
   const frontMs = Number(deck.dataset.frontMs);
   const backMs = Number(deck.dataset.backMs);
@@ -57,18 +86,17 @@ const setupDeck = (deck: HTMLElement) => {
   const autoAudioOn = () => autoAudio?.checked ?? false;
 
   let order = parsePlayOrder(localStorage.getItem(PlayOrderStorageKey));
+  let sequence: number[] = [];
+  let step = 0;
 
-  let shuffled: number[] = [];
-  let shuffledFor = "";
-  const nextRandomIndex = (c: HTMLElement) => {
+  const alignSequence = (c: HTMLElement) => {
     const total = Number(c.dataset.total);
-    const current = Number(c.dataset.index);
-    const key = `${currentFilter(c)}:${total}`;
-    if (shuffledFor !== key || shuffled.length === 0) {
-      shuffled = shuffle(range(0, total).filter((i) => i !== current));
-      shuffledFor = key;
+    const index = Number(c.dataset.index);
+    if (sequence.length !== total) {
+      sequence = buildSequence(order, total);
+      if (order === "random") sequence = [index, ...sequence.filter((i) => i !== index)];
     }
-    return shuffled.pop() ?? current;
+    if (sequence[step] !== index) step = Math.max(sequence.indexOf(index), 0);
   };
 
   const rateSelect = document.getElementById("playback-rate") as HTMLSelectElement | null;
@@ -141,12 +169,12 @@ const setupDeck = (deck: HTMLElement) => {
   const progressKey = (filter: string) => `card-progress:${deck.dataset.groupId}:${filter}`;
   const saveProgress = () => {
     const c = card();
-    if (c) localStorage.setItem(progressKey(currentFilter(c)), c.dataset.index ?? "0");
+    if (!c) return;
+    const progress: Progress = { order, step, sequence };
+    localStorage.setItem(progressKey(currentFilter(c)), JSON.stringify(progress));
   };
-  const savedIndex = (filter: string, total: number) => {
-    const index = Number(localStorage.getItem(progressKey(filter)));
-    return Number.isInteger(index) && index > 0 && index < total ? index : null;
-  };
+  const savedProgress = (filter: string, total: number) =>
+    parseProgress(localStorage.getItem(progressKey(filter)), total);
 
   if ("mediaSession" in navigator) {
     const handlers: [MediaSessionAction, () => void][] = [
@@ -170,12 +198,11 @@ const setupDeck = (deck: HTMLElement) => {
     const rows = [...dialog.querySelectorAll<HTMLElement>("section[data-filter]")];
     for (const row of rows) {
       const total = Number(row.dataset.total);
-      const index = savedIndex(row.dataset.filter ?? "all", total);
+      const progress = savedProgress(row.dataset.filter ?? "all", total);
       const resume = row.querySelector<HTMLButtonElement>('[data-start="resume"]');
-      if (index === null || !resume) continue;
+      if (!progress || !resume) continue;
       resume.hidden = false;
-      resume.dataset.index = String(index);
-      resume.textContent = `続きから（${index + 1} / ${total}）`;
+      resume.textContent = `続きから（${PlayOrderLabels[progress.order]} ${progress.step + 1} / ${total}）`;
     }
     const orderInput = dialog.querySelector<HTMLInputElement>(
       `input[name="play-order"][value="${order}"]`,
@@ -188,20 +215,26 @@ const setupDeck = (deck: HTMLElement) => {
       const row = closest(e.target, "section[data-filter]");
       if (!button || !row?.dataset.urlTemplate) return;
       dialog.close();
-      order = parsePlayOrder(
-        dialog.querySelector<HTMLInputElement>('input[name="play-order"]:checked')?.value,
-      );
-      localStorage.setItem(PlayOrderStorageKey, order);
       const total = Number(row.dataset.total);
-      const first =
-        order === "reverse"
-          ? total - 1
-          : order === "random"
-            ? Math.floor(Math.random() * total)
-            : 0;
-      const index = button.dataset.start === "resume" ? Number(button.dataset.index) : first;
+      const progress =
+        button.dataset.start === "resume"
+          ? savedProgress(row.dataset.filter ?? "all", total)
+          : null;
+      if (progress) {
+        ({ order, step, sequence } = progress);
+      } else {
+        order = parsePlayOrder(
+          dialog.querySelector<HTMLInputElement>('input[name="play-order"]:checked')?.value,
+        );
+        sequence = buildSequence(order, total);
+        step = 0;
+      }
+      localStorage.setItem(PlayOrderStorageKey, order);
+      const index = sequence[step] ?? 0;
       const c = card();
       if (c && currentFilter(c) === row.dataset.filter && Number(c.dataset.index) === index) {
+        syncPosition();
+        saveProgress();
         setPlaying(true);
         return;
       }
@@ -222,7 +255,8 @@ const setupDeck = (deck: HTMLElement) => {
   const syncPosition = () => {
     const c = card();
     if (!c) return;
-    const position = String(Number(c.dataset.index) + 1);
+    alignSequence(c);
+    const position = String(step + 1);
     const total = String(c.dataset.total);
     if (positionRange) {
       positionRange.max = total;
@@ -248,19 +282,20 @@ const setupDeck = (deck: HTMLElement) => {
   const go = (dir: Dir) => {
     const c = card();
     if (!c) return;
-    const index = Number(c.dataset.index);
-    const total = Number(c.dataset.total);
-    loadCard(dir === "next" ? (index + 1) % total : (index - 1 + total) % total, dir);
+    alignSequence(c);
+    const total = sequence.length;
+    if (dir === "next" && step === total - 1 && order === "random") {
+      const last = sequence[step];
+      sequence = shuffle(range(0, total));
+      if (total > 1 && sequence[0] === last) sequence.push(sequence.shift() ?? 0);
+      step = 0;
+    } else {
+      step = dir === "next" ? (step + 1) % total : (step - 1 + total) % total;
+    }
+    loadCard(sequence[step] ?? 0, dir);
   };
 
-  const advance = () => {
-    const c = card();
-    if (!c) return;
-    if (order === "reverse") go("prev");
-    else if (order === "random" && Number(c.dataset.total) > 1)
-      loadCard(nextRandomIndex(c), "next");
-    else go("next");
-  };
+  const advance = () => go("next");
 
   for (const button of document.querySelectorAll<HTMLElement>("[data-nav-button]")) {
     button.addEventListener("click", () =>
@@ -271,10 +306,12 @@ const setupDeck = (deck: HTMLElement) => {
   const jumpTo = (position: number) => {
     const c = card();
     if (!c || !Number.isFinite(position)) return syncPosition();
-    const current = Number(c.dataset.index);
-    const index = clamp(Math.round(position), { min: 1, max: Number(c.dataset.total) }) - 1;
-    if (index === current) return syncPosition();
-    loadCard(index, index > current ? "next" : "prev");
+    alignSequence(c);
+    const target = clamp(Math.round(position), { min: 1, max: sequence.length }) - 1;
+    if (target === step) return syncPosition();
+    const dir = target > step ? "next" : "prev";
+    step = target;
+    loadCard(sequence[step] ?? 0, dir);
   };
 
   positionRange?.addEventListener("input", () => {

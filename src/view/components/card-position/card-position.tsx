@@ -13,7 +13,7 @@ export const CardPosition = (props: Props) => {
         min="1"
         max={String(total)}
         value={String(position)}
-        aria-label="開始するカード"
+        aria-label="再生した枚数"
         class="min-w-0 flex-1 accent-blue-700"
       />
       <input
@@ -22,7 +22,7 @@ export const CardPosition = (props: Props) => {
         min="1"
         max={String(total)}
         value={String(position)}
-        aria-label="カードの番号"
+        aria-label="何枚目か"
         class="w-20 rounded-md border border-neutral-300 bg-white p-1 text-right tabular-nums"
       />
       <span id="card-position-total" class="text-neutral-500 tabular-nums">
