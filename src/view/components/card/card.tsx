@@ -1,8 +1,10 @@
-import type { CardFilter, Word } from "../../../backend/db";
+import type { CardFilter, WordWithGroups } from "../../../backend/db";
 import { audioUrl } from "../../helper/audio-url";
 import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
 import { FavoriteButton } from "../favorite-button";
+import { GroupTags } from "../group-tags";
+import { QuizResults } from "../quiz-results";
 import { SpeakButton } from "../speak-button";
 import { WordImage } from "../word-image";
 
@@ -10,7 +12,7 @@ type Props = {
   groupId: number;
   index: number;
   total: number;
-  word: Word;
+  word: WordWithGroups;
   showExamplesOnFront: boolean;
   filter?: CardFilter;
 };
@@ -20,6 +22,7 @@ const Face =
 
 export const Card = (props: Props) => {
   const { groupId, index, total, word, showExamplesOnFront, filter = "all" } = props;
+  const groups = word.groups.filter((g) => g.id !== groupId);
   const cardUrl = (i: number) =>
     `/groups/${groupId}/cards/${i}${filter === "favorites" ? "?only=favorites" : ""}`;
   return (
@@ -54,6 +57,16 @@ export const Card = (props: Props) => {
                 <li>{e.sentence}</li>
               ))}
             </ul>
+          )}
+          {(word.quiz_results.length > 0 || groups.length > 0) && (
+            <div class="absolute inset-x-4 bottom-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+              {word.quiz_results.length > 0 && (
+                <span class="text-neutral-400">
+                  4択 <QuizResults results={word.quiz_results} />
+                </span>
+              )}
+              <GroupTags groups={groups} />
+            </div>
           )}
         </div>
         <div class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}>

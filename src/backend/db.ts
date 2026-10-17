@@ -149,10 +149,10 @@ export const getWordAt = async (
   groupId: number,
   index: number,
   filter: CardFilter = "all",
-): Promise<Word | null> => {
+): Promise<WordWithGroups | null> => {
   const row = await db
     .prepare(
-      `SELECT ${WordColumns}
+      `SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults}
          FROM group_words gw
          JOIN words w ON w.id = gw.word_id
         WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${IsFavorite}` : ""}
@@ -160,8 +160,8 @@ export const getWordAt = async (
         LIMIT 1 OFFSET ?`,
     )
     .bind(groupId, index)
-    .first<WordRow>();
-  return row && toWord(row);
+    .first<WordWithGroupsRow>();
+  return row && toWordWithGroups(row);
 };
 
 export const listGroupWords = async (

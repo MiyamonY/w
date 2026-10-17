@@ -1,4 +1,4 @@
-import type { Group, Word } from "../../../backend/db";
+import type { Group, WordWithGroups } from "../../../backend/db";
 import type { Settings } from "../../../backend/settings";
 import { DefaultPlaybackRate, formatPlaybackRate, PlaybackRates } from "../../helper/playback-rate";
 import { Card } from "../card";
@@ -8,7 +8,7 @@ import { StartDialog } from "../start-dialog";
 type Props = {
   group: Group;
   start: number;
-  first: Word | null;
+  first: WordWithGroups | null;
   settings: Settings;
   favoritesCount?: number;
 };
