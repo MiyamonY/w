@@ -1,3 +1,4 @@
+import { shuffle } from "remeda";
 import { z } from "zod/mini";
 import { type CardFilter, IsFavorite } from "./db";
 import { CardFilterSchema, coercedInt, coercedLiteral } from "./paging";
@@ -110,13 +111,15 @@ export const pickQuestionIds = async (
          FROM group_words gw
          JOIN words w ON w.id = gw.word_id
          JOIN questions q ON q.word_id = w.id
+         LEFT JOIN question_answers latest ON latest.id =
+              (SELECT MAX(a.id) FROM question_answers a WHERE a.question_id = q.id)
         WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${IsFavorite}` : ""}
-        ORDER BY RANDOM()
+        ORDER BY COALESCE(latest.correct, 0), RANDOM()
         LIMIT ?`,
     )
     .bind(groupId, count)
     .all<{ id: number }>();
-  return results.map((q) => q.id);
+  return shuffle(results.map((q) => q.id));
 };
 
 export const getQuestions = async (db: D1Database, ids: number[]): Promise<QuizQuestion[]> => {
