@@ -36,7 +36,8 @@ const setupStartDialog = (dialog: HTMLDialogElement) => {
       if (count) count.textContent = `${total} 語`;
       const resume = row.querySelector<HTMLButtonElement>('[data-start="resume"]');
       if (!resume) continue;
-      const progress = loadProgress(groupId, filter, total);
+      const saved = loadProgress(groupId, filter, total);
+      const progress = saved?.order === "random" ? null : saved;
       resume.hidden = !progress;
       if (progress) {
         resume.textContent = `続きから（${PlayOrderLabels[progress.order]} ${progress.step + 1} / ${total}）`;
