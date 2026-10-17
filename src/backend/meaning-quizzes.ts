@@ -1,24 +1,25 @@
 import { isFavorite } from "./db";
 import {
-  type HistoryRow,
-  historyColumns,
+  ChoicesSchema,
+  inList,
+  orderByIds,
   type QuestionHistory,
-  questionsWithStats,
+  type QuizChoice,
   recordAnswer,
-  StringsSchema,
+  StatsColumns,
+  type StatsRow,
+  statsJoin,
   toHistory,
 } from "./quizzes";
 
 export type MeaningQuestion = {
-  id: number;
-  number: number;
   word_id: number;
+  number: number;
   term: string;
   ipa: string | null;
   audio_key: string | null;
   favorite: boolean;
-  choices: string[];
-  choice_terms: string[];
+  choices: QuizChoice[];
   answer: number;
   chosen: number | null;
   history: QuestionHistory;
@@ -26,18 +27,17 @@ export type MeaningQuestion = {
 
 type MeaningQuestionRow = Omit<
   MeaningQuestion,
-  "number" | "choices" | "choice_terms" | "chosen" | "history" | "favorite"
+  "number" | "choices" | "chosen" | "history" | "favorite"
 > &
-  HistoryRow & {
-    choices: string;
-    choice_terms: string;
-    favorite: number;
-  };
+  StatsRow & { choices: string; favorite: number };
 
-const MeaningQuestionColumns = `q.id, q.answer, q.choice_meanings AS choices, q.choices AS choice_terms,
-       w.id AS word_id, w.term, w.ipa, w.audio_key,
-       ${historyColumns("meaning")},
+const MeaningQuestionColumns = `w.id AS word_id, w.term, w.ipa, w.audio_key, wc.choices, wc.answer,
+       ${StatsColumns},
        ${isFavorite("w.id")} AS favorite`;
+
+const MeaningQuestionTables = `word_choices wc
+         JOIN words w ON w.id = wc.word_id
+         ${statsJoin("meaning")}`;
 
 const toMeaningQuestion = (
   { attempts, corrects, recent, favorite, ...row }: MeaningQuestionRow,
@@ -48,8 +48,7 @@ const toMeaningQuestion = (
   number,
   chosen,
   history: toHistory({ attempts, corrects, recent }),
-  choices: StringsSchema.parse(JSON.parse(row.choices)),
-  choice_terms: StringsSchema.parse(JSON.parse(row.choice_terms)),
+  choices: ChoicesSchema.parse(JSON.parse(row.choices)),
   favorite: favorite === 1,
 });
 
@@ -60,33 +59,24 @@ export const getMeaningQuestions = async (
   if (ids.length === 0) return [];
   const { results } = await db
     .prepare(
-      `SELECT ${MeaningQuestionColumns}
-         FROM ${questionsWithStats("meaning")}
-        WHERE q.id IN (${ids.map(() => "?").join(", ")})`,
+      `SELECT ${MeaningQuestionColumns} FROM ${MeaningQuestionTables}
+        WHERE wc.word_id IN (${inList(ids)})`,
     )
     .bind(...ids)
     .all<MeaningQuestionRow>();
-  const rows = new Map(results.map((row) => [row.id, row]));
-  return ids.flatMap((id, i) => {
-    const row = rows.get(id);
-    return row ? [toMeaningQuestion(row, i + 1, null)] : [];
-  });
+  return orderByIds(ids, results).map(({ row, number }) => toMeaningQuestion(row, number, null));
 };
 
 export const answerMeaningQuestion = async (
   db: D1Database,
-  questionId: number,
+  wordId: number,
   number: number,
   choice: number,
 ): Promise<MeaningQuestion | null> => {
-  await recordAnswer(db, "meaning", questionId, choice);
+  await recordAnswer(db, "meaning", wordId, choice);
   const row = await db
-    .prepare(
-      `SELECT ${MeaningQuestionColumns}
-         FROM ${questionsWithStats("meaning")}
-        WHERE q.id = ?`,
-    )
-    .bind(questionId)
+    .prepare(`SELECT ${MeaningQuestionColumns} FROM ${MeaningQuestionTables} WHERE wc.word_id = ?`)
+    .bind(wordId)
     .first<MeaningQuestionRow>();
   return row ? toMeaningQuestion(row, number, choice) : null;
 };

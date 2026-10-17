@@ -26,8 +26,8 @@ import {
   AnswerSchema,
   answerQuestion,
   getQuestions,
-  pickQuestionIds,
-  QuestionIdsSchema,
+  pickQuizWordIds,
+  WordIdsSchema,
   QuizRequestSchema,
 } from "./backend/quizzes";
 import {
@@ -163,12 +163,12 @@ app.post("/groups/:id{[0-9]+}/quizzes", async (c) => {
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
   const { count, only } = QuizRequestSchema.parse(await c.req.parseBody());
-  const ids = await pickQuestionIds(c.env.DB, id, count, only, "sentence");
+  const ids = await pickQuizWordIds(c.env.DB, id, count, only, "cloze");
   if (ids.length === 0) {
     return c.html(
       <QuizForm
         groupId={id}
-        questionCount={group.question_count}
+        questionCount={group.word_count}
         favoritesCount={group.favorite_count}
         error="出題できる問題がありません。"
       />,
@@ -187,13 +187,13 @@ app.get("/groups/:id{[0-9]+}/quiz", async (c) => {
   const id = Number(c.req.param("id"));
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
-  const ids = QuestionIdsSchema.parse(c.req.query("q")).slice(0, 50);
+  const ids = WordIdsSchema.parse(c.req.query("q")).slice(0, 50);
   const questions = await getQuestions(c.env.DB, ids);
   if (questions.length === 0) return c.redirect(`/groups/${id}/tests`);
   return c.html(<QuizPage group={group} questions={questions} />);
 });
 
-app.post("/questions/:id{[0-9]+}/answer", async (c) => {
+app.post("/words/:id{[0-9]+}/cloze-answer", async (c) => {
   const input = AnswerSchema.safeParse(await c.req.parseBody());
   if (!input.success) return c.body(null, 400);
   const question = await answerQuestion(
@@ -211,12 +211,12 @@ app.post("/groups/:id{[0-9]+}/meaning-quizzes", async (c) => {
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
   const { count, only } = QuizRequestSchema.parse(await c.req.parseBody());
-  const ids = await pickQuestionIds(c.env.DB, id, count, only, "meaning");
+  const ids = await pickQuizWordIds(c.env.DB, id, count, only, "meaning");
   if (ids.length === 0) {
     return c.html(
       <MeaningQuizForm
         groupId={id}
-        questionCount={group.question_count}
+        questionCount={group.word_count}
         favoritesCount={group.favorite_count}
         error="出題できる問題がありません。"
       />,
@@ -235,13 +235,13 @@ app.get("/groups/:id{[0-9]+}/meaning-quiz", async (c) => {
   const id = Number(c.req.param("id"));
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
-  const ids = QuestionIdsSchema.parse(c.req.query("q")).slice(0, 50);
+  const ids = WordIdsSchema.parse(c.req.query("q")).slice(0, 50);
   const questions = await getMeaningQuestions(c.env.DB, ids);
   if (questions.length === 0) return c.redirect(`/groups/${id}/tests`);
   return c.html(<MeaningQuizPage group={group} questions={questions} />);
 });
 
-app.post("/questions/:id{[0-9]+}/meaning-answer", async (c) => {
+app.post("/words/:id{[0-9]+}/meaning-answer", async (c) => {
   const input = AnswerSchema.safeParse(await c.req.parseBody());
   if (!input.success) return c.body(null, 400);
   const question = await answerMeaningQuestion(

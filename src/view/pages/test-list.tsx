@@ -30,14 +30,14 @@ export const TestListPage = (props: Props) => {
       <p class="mt-2 text-sm text-neutral-500">英検1級の大問1形式で、空所に入る語を選びます。</p>
       <QuizForm
         groupId={group.id}
-        questionCount={group.question_count}
+        questionCount={group.word_count}
         favoritesCount={group.favorite_count}
       />
       <h2 class="mt-8 font-semibold">意味の4択</h2>
       <p class="mt-2 text-sm text-neutral-500">英単語を見て、日本語の意味を4つから選びます。</p>
       <MeaningQuizForm
         groupId={group.id}
-        questionCount={group.question_count}
+        questionCount={group.word_count}
         favoritesCount={group.favorite_count}
       />
       <h2 class="mt-8 font-semibold">英文テスト</h2>

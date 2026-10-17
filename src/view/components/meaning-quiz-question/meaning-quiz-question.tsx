@@ -21,7 +21,7 @@ export const MeaningQuizQuestion = (props: Props) => {
   const { attempts, corrects } = question.history;
   return (
     <section
-      id={`meaning-question-${question.id}`}
+      id={`meaning-question-${question.word_id}`}
       data-result={answered ? (correct ? "correct" : "wrong") : undefined}
       class="rounded-xl bg-white p-4 shadow-sm"
     >
@@ -51,20 +51,18 @@ export const MeaningQuizQuestion = (props: Props) => {
             <button
               type="button"
               disabled={answered}
-              hx-post={answered ? undefined : `/questions/${question.id}/meaning-answer`}
+              hx-post={answered ? undefined : `/words/${question.word_id}/meaning-answer`}
               hx-vals={
                 answered ? undefined : JSON.stringify({ choice: i, number: question.number })
               }
-              hx-target={`#meaning-question-${question.id}`}
+              hx-target={`#meaning-question-${question.word_id}`}
               hx-swap="outerHTML"
               class={`flex w-full items-baseline gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-left ${choiceTone(question, i)}`}
             >
               <span class="text-neutral-400">{i + 1}</span>
               <span>
-                <span class="font-medium">{choice}</span>
-                {answered && (
-                  <span class="ml-2 text-xs text-neutral-500">{question.choice_terms[i]}</span>
-                )}
+                <span class="font-medium">{choice.ja}</span>
+                {answered && <span class="ml-2 text-xs text-neutral-500">{choice.en}</span>}
               </span>
             </button>
           </li>

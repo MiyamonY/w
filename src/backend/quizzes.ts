@@ -16,7 +16,7 @@ export const AnswerSchema = z.object({
   number: coercedInt(1),
 });
 
-export const QuestionIdsSchema = z.catch(
+export const WordIdsSchema = z.catch(
   z.pipe(
     z.string(),
     z.transform((value) =>
@@ -29,67 +29,113 @@ export const QuestionIdsSchema = z.catch(
   [],
 );
 
-export const StringsSchema = z.array(z.string());
+export type QuizKind = "cloze" | "meaning";
 
-export type QuizKind = "sentence" | "meaning";
+export type QuizChoice = { en: string; ja: string };
+
+export const ChoicesSchema = z.array(z.object({ en: z.string(), ja: z.string() }));
 
 export type QuestionHistory = { attempts: number; corrects: number; recent: boolean[] };
 
 const RecentResultCount = 10;
 
-export const questionsWithStats = (kind: QuizKind) => `questions q
-         JOIN words w ON w.id = q.word_id
-         LEFT JOIN question_stats s ON s.question_id = q.id AND s.kind = '${kind}'`;
+export const statsJoin = (kind: QuizKind) =>
+  `LEFT JOIN quiz_stats s ON s.word_id = w.id AND s.kind = '${kind}'`;
 
-export const historyColumns = (kind: QuizKind) => `COALESCE(s.attempts, 0) AS attempts,
-       COALESCE(s.corrects, 0) AS corrects,
-       (SELECT group_concat(correct, '')
-          FROM (SELECT correct
-                  FROM (SELECT a.id, a.correct FROM question_answers a
-                         WHERE a.question_id = q.id AND a.kind = '${kind}'
-                         ORDER BY a.id DESC LIMIT ${RecentResultCount})
-                 ORDER BY id)) AS recent`;
+export const StatsColumns = `COALESCE(s.attempts, 0) AS attempts, COALESCE(s.corrects, 0) AS corrects,
+       COALESCE(s.recent, '[]') AS recent`;
 
-export type HistoryRow = { attempts: number; corrects: number; recent: string | null };
+export type StatsRow = { attempts: number; corrects: number; recent: string };
 
-export const toHistory = ({ attempts, corrects, recent }: HistoryRow): QuestionHistory => ({
+const RecentSchema = z.array(z.number());
+
+export const toHistory = ({ attempts, corrects, recent }: StatsRow): QuestionHistory => ({
   attempts,
   corrects,
-  recent: [...(recent ?? "")].map((c) => c === "1"),
+  recent: RecentSchema.parse(JSON.parse(recent)).map((c) => c === 1),
 });
 
+export const pickQuizWordIds = async (
+  db: D1Database,
+  groupId: number,
+  count: number,
+  filter: CardFilter,
+  kind: QuizKind,
+) => {
+  const { results } = await db
+    .prepare(
+      `SELECT gw.word_id
+         FROM group_words gw
+         LEFT JOIN quiz_stats s ON s.word_id = gw.word_id AND s.kind = '${kind}'
+        WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${isFavorite("gw.word_id")}` : ""}
+        ORDER BY COALESCE(json_extract(s.recent, '$[#-1]'), 0), RANDOM()
+        LIMIT ?`,
+    )
+    .bind(groupId, count)
+    .all<{ word_id: number }>();
+  return shuffle(results.map((row) => row.word_id));
+};
+
+export const recordAnswer = async (
+  db: D1Database,
+  kind: QuizKind,
+  wordId: number,
+  choice: number,
+) => {
+  await db
+    .prepare(
+      `INSERT INTO quiz_stats (word_id, kind, attempts, corrects, recent)
+       SELECT word_id, ?1, 1, answer = ?2, json_array(answer = ?2)
+         FROM word_choices WHERE word_id = ?3
+       ON CONFLICT (word_id, kind) DO UPDATE
+          SET attempts = attempts + 1,
+              corrects = corrects + excluded.corrects,
+              recent = (SELECT json_group_array(value)
+                          FROM json_each(json_insert(quiz_stats.recent, '$[#]', excluded.corrects))
+                         WHERE key > json_array_length(quiz_stats.recent) - ${RecentResultCount})`,
+    )
+    .bind(kind, choice, wordId)
+    .run();
+};
+
+export const inList = (ids: number[]) => ids.map(() => "?").join(", ");
+
+export const orderByIds = <T extends { word_id: number }>(ids: number[], rows: T[]) => {
+  const byId = new Map(rows.map((row) => [row.word_id, row]));
+  return ids.flatMap((id, i) => {
+    const row = byId.get(id);
+    return row ? [{ row, number: i + 1 }] : [];
+  });
+};
+
 export type QuizQuestion = {
-  id: number;
-  number: number;
-  sentence: string;
-  choices: string[];
-  answer: number;
-  choice_meanings: string[];
-  translation: string;
-  explanation: string;
-  chosen: number | null;
-  history: QuestionHistory;
   word_id: number;
+  number: number;
   term: string;
   meaning: string;
   audio_key: string | null;
   favorite: boolean;
+  sentence: string;
+  choices: QuizChoice[];
+  answer: number;
+  translation: string;
+  explanation: string;
+  chosen: number | null;
+  history: QuestionHistory;
 };
 
-type QuestionRow = Omit<
-  QuizQuestion,
-  "number" | "choices" | "choice_meanings" | "chosen" | "history" | "favorite"
-> &
-  HistoryRow & {
-    choices: string;
-    choice_meanings: string;
-    favorite: number;
-  };
+type QuestionRow = Omit<QuizQuestion, "number" | "choices" | "chosen" | "history" | "favorite"> &
+  StatsRow & { choices: string; favorite: number };
 
-const QuestionColumns = `q.id, q.sentence, q.choices, q.answer, q.choice_meanings,
-       q.translation, q.explanation, w.id AS word_id, w.term, w.meaning, w.audio_key,
-       ${historyColumns("sentence")},
+const QuestionColumns = `w.id AS word_id, w.term, w.meaning, w.audio_key,
+       c.sentence, c.choices, wc.answer, c.translation, c.explanation,
+       ${StatsColumns},
        ${isFavorite("w.id")} AS favorite`;
+
+const QuestionTables = `cloze_questions c
+         JOIN word_choices wc ON wc.word_id = c.word_id
+         JOIN words w ON w.id = c.word_id
+         ${statsJoin("cloze")}`;
 
 const toQuestion = (
   { attempts, corrects, recent, favorite, ...row }: QuestionRow,
@@ -100,79 +146,29 @@ const toQuestion = (
   number,
   chosen,
   history: toHistory({ attempts, corrects, recent }),
-  choices: StringsSchema.parse(JSON.parse(row.choices)),
-  choice_meanings: StringsSchema.parse(JSON.parse(row.choice_meanings)),
+  choices: ChoicesSchema.parse(JSON.parse(row.choices)),
   favorite: favorite === 1,
 });
-
-export const pickQuestionIds = async (
-  db: D1Database,
-  groupId: number,
-  count: number,
-  filter: CardFilter,
-  kind: QuizKind,
-) => {
-  const { results } = await db
-    .prepare(
-      `SELECT q.id
-         FROM group_words gw
-         JOIN questions q ON q.word_id = gw.word_id
-         LEFT JOIN question_stats s ON s.question_id = q.id AND s.kind = '${kind}'
-        WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${isFavorite("gw.word_id")}` : ""}
-        ORDER BY COALESCE(s.latest_correct, 0), RANDOM()
-        LIMIT ?`,
-    )
-    .bind(groupId, count)
-    .all<{ id: number }>();
-  return shuffle(results.map((q) => q.id));
-};
-
-export const recordAnswer = async (
-  db: D1Database,
-  kind: QuizKind,
-  questionId: number,
-  choice: number,
-) => {
-  await db
-    .prepare(
-      `INSERT INTO question_answers (question_id, kind, chosen, correct)
-       SELECT id, ?, ?, answer = ? FROM questions WHERE id = ?`,
-    )
-    .bind(kind, choice, choice, questionId)
-    .run();
-};
 
 export const getQuestions = async (db: D1Database, ids: number[]): Promise<QuizQuestion[]> => {
   if (ids.length === 0) return [];
   const { results } = await db
-    .prepare(
-      `SELECT ${QuestionColumns}
-         FROM ${questionsWithStats("sentence")}
-        WHERE q.id IN (${ids.map(() => "?").join(", ")})`,
-    )
+    .prepare(`SELECT ${QuestionColumns} FROM ${QuestionTables} WHERE c.word_id IN (${inList(ids)})`)
     .bind(...ids)
     .all<QuestionRow>();
-  const rows = new Map(results.map((row) => [row.id, row]));
-  return ids.flatMap((id, i) => {
-    const row = rows.get(id);
-    return row ? [toQuestion(row, i + 1, null)] : [];
-  });
+  return orderByIds(ids, results).map(({ row, number }) => toQuestion(row, number, null));
 };
 
 export const answerQuestion = async (
   db: D1Database,
-  questionId: number,
+  wordId: number,
   number: number,
   choice: number,
 ): Promise<QuizQuestion | null> => {
-  await recordAnswer(db, "sentence", questionId, choice);
+  await recordAnswer(db, "cloze", wordId, choice);
   const row = await db
-    .prepare(
-      `SELECT ${QuestionColumns}
-         FROM ${questionsWithStats("sentence")}
-        WHERE q.id = ?`,
-    )
-    .bind(questionId)
+    .prepare(`SELECT ${QuestionColumns} FROM ${QuestionTables} WHERE c.word_id = ?`)
+    .bind(wordId)
     .first<QuestionRow>();
   return row ? toQuestion(row, number, choice) : null;
 };
