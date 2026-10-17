@@ -1,5 +1,6 @@
 import type { QuizQuestion as Question } from "../../../backend/quizzes";
 import { FavoriteButton } from "../favorite-button";
+import { QuizResults } from "../quiz-results";
 import { SpeakButton } from "../speak-button";
 
 type Props = {
@@ -50,8 +51,9 @@ export const QuizQuestion = (props: Props) => {
             {correct ? "正解" : "不正解"}
           </span>
         )}
-        {answered && (
-          <span class="ml-auto text-xs">
+        {attempts > 0 && (
+          <span class="ml-auto flex items-center gap-2 text-xs">
+            <QuizResults history={question.history} />
             これまで {attempts} 回中 {corrects} 回正解
           </span>
         )}

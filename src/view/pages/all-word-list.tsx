@@ -1,11 +1,11 @@
-import type { Group, ListedWord } from "../../backend/db";
+import type { Group, WordWithGroups } from "../../backend/db";
 import type { Paging } from "../../backend/paging";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
 import { PagedWordTable } from "../components/paged-word-table";
 
 type Props = {
-  words: ListedWord[];
+  words: WordWithGroups[];
   paging: Paging;
   groups: Group[];
   groupId?: number;

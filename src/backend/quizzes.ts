@@ -31,7 +31,9 @@ export const QuestionIdsSchema = z.catch(
 
 const StringsSchema = z.array(z.string());
 
-export type QuestionHistory = { attempts: number; corrects: number };
+export type QuestionHistory = { attempts: number; corrects: number; recent: boolean[] };
+
+const RecentResultCount = 10;
 
 export type QuizQuestion = {
   id: number;
@@ -59,23 +61,29 @@ type QuestionRow = Omit<
   choice_meanings: string;
   attempts: number;
   corrects: number;
+  recent: string | null;
   favorite: number;
 };
 
 const QuestionColumns = `q.id, q.sentence, q.choices, q.answer, q.choice_meanings,
        q.translation, q.explanation, w.id AS word_id, w.term, w.meaning, w.audio_key,
        q.attempts, q.corrects,
+       (SELECT group_concat(correct, '')
+          FROM (SELECT correct
+                  FROM (SELECT a.id, a.correct FROM question_answers a
+                         WHERE a.question_id = q.id ORDER BY a.id DESC LIMIT ${RecentResultCount})
+                 ORDER BY id)) AS recent,
        ${isFavorite("w.id")} AS favorite`;
 
 const toQuestion = (
-  { attempts, corrects, favorite, ...row }: QuestionRow,
+  { attempts, corrects, recent, favorite, ...row }: QuestionRow,
   number: number,
   chosen: number | null,
 ): QuizQuestion => ({
   ...row,
   number,
   chosen,
-  history: { attempts, corrects },
+  history: { attempts, corrects, recent: [...(recent ?? "")].map((c) => c === "1") },
   choices: StringsSchema.parse(JSON.parse(row.choices)),
   choice_meanings: StringsSchema.parse(JSON.parse(row.choice_meanings)),
   favorite: favorite === 1,

@@ -1,20 +1,19 @@
+import type { QuestionHistory } from "../../../backend/quizzes";
+
 type Props = {
-  results: boolean[];
+  history: QuestionHistory;
 };
 
-const MaxShown = 10;
-
 export const QuizResults = (props: Props) => {
-  const { results } = props;
-  if (results.length === 0) return null;
-  const shown = results.slice(-MaxShown);
+  const { attempts, corrects, recent } = props.history;
+  if (attempts === 0) return null;
   return (
     <span
       class="font-mono tracking-wider whitespace-nowrap"
-      title={`4択 ${results.length} 回中 ${results.filter(Boolean).length} 回正解`}
+      title={`${attempts} 回中 ${corrects} 回正解`}
     >
-      {results.length > MaxShown && <span class="text-neutral-400">…</span>}
-      {shown.map((correct) =>
+      {attempts > recent.length && <span class="text-neutral-400">…</span>}
+      {recent.map((correct) =>
         correct ? <span class="text-green-700">o</span> : <span class="text-red-600">x</span>,
       )}
     </span>

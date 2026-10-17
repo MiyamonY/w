@@ -1,13 +1,12 @@
-import type { ListedWord } from "../../../backend/db";
+import type { WordWithGroups } from "../../../backend/db";
 import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
 import { FavoriteButton } from "../favorite-button";
 import { GroupTags } from "../group-tags";
-import { QuizResults } from "../quiz-results";
 import { SpeakButton } from "../speak-button";
 
 type Props = {
-  words: ListedWord[];
+  words: WordWithGroups[];
   cardHref?: (index: number) => string;
   currentGroupId?: number;
 };
@@ -17,7 +16,6 @@ const Cell =
   "block py-0.5 empty:hidden md:table-cell md:px-3 md:py-2.5 md:align-top md:empty:table-cell";
 const SubRow = "block md:table-row";
 const SubCell = "block pt-1.5 md:table-cell md:px-3 md:pt-0 md:pb-2";
-const SubLabel = "mr-1.5 text-xs text-neutral-400";
 
 export const WordTable = (props: Props) => {
   const { words, cardHref, currentGroupId } = props;
@@ -68,15 +66,6 @@ export const WordTable = (props: Props) => {
                 {w.examples.length > 0 && <Examples examples={w.examples} />}
               </td>
             </tr>
-            {w.quiz_results.length > 0 && (
-              <tr class={SubRow}>
-                <td class="hidden md:table-cell" colspan={2} />
-                <td class={SubCell} colspan={3}>
-                  <span class={SubLabel}>4択</span>
-                  <QuizResults results={w.quiz_results} />
-                </td>
-              </tr>
-            )}
             {groups.length > 0 && (
               <tr class={SubRow}>
                 <td class="hidden md:table-cell" colspan={2} />
