@@ -31,9 +31,32 @@ export const QuestionIdsSchema = z.catch(
 
 export const StringsSchema = z.array(z.string());
 
+export type QuizKind = "sentence" | "meaning";
+
 export type QuestionHistory = { attempts: number; corrects: number; recent: boolean[] };
 
-export const RecentResultCount = 10;
+const RecentResultCount = 10;
+
+export const questionsWithStats = (kind: QuizKind) => `questions q
+         JOIN words w ON w.id = q.word_id
+         LEFT JOIN question_stats s ON s.question_id = q.id AND s.kind = '${kind}'`;
+
+export const historyColumns = (kind: QuizKind) => `COALESCE(s.attempts, 0) AS attempts,
+       COALESCE(s.corrects, 0) AS corrects,
+       (SELECT group_concat(correct, '')
+          FROM (SELECT correct
+                  FROM (SELECT a.id, a.correct FROM question_answers a
+                         WHERE a.question_id = q.id AND a.kind = '${kind}'
+                         ORDER BY a.id DESC LIMIT ${RecentResultCount})
+                 ORDER BY id)) AS recent`;
+
+export type HistoryRow = { attempts: number; corrects: number; recent: string | null };
+
+export const toHistory = ({ attempts, corrects, recent }: HistoryRow): QuestionHistory => ({
+  attempts,
+  corrects,
+  recent: [...(recent ?? "")].map((c) => c === "1"),
+});
 
 export type QuizQuestion = {
   id: number;
@@ -56,23 +79,16 @@ export type QuizQuestion = {
 type QuestionRow = Omit<
   QuizQuestion,
   "number" | "choices" | "choice_meanings" | "chosen" | "history" | "favorite"
-> & {
-  choices: string;
-  choice_meanings: string;
-  attempts: number;
-  corrects: number;
-  recent: string | null;
-  favorite: number;
-};
+> &
+  HistoryRow & {
+    choices: string;
+    choice_meanings: string;
+    favorite: number;
+  };
 
 const QuestionColumns = `q.id, q.sentence, q.choices, q.answer, q.choice_meanings,
        q.translation, q.explanation, w.id AS word_id, w.term, w.meaning, w.audio_key,
-       q.attempts, q.corrects,
-       (SELECT group_concat(correct, '')
-          FROM (SELECT correct
-                  FROM (SELECT a.id, a.correct FROM question_answers a
-                         WHERE a.question_id = q.id ORDER BY a.id DESC LIMIT ${RecentResultCount})
-                 ORDER BY id)) AS recent,
+       ${historyColumns("sentence")},
        ${isFavorite("w.id")} AS favorite`;
 
 const toQuestion = (
@@ -83,7 +99,7 @@ const toQuestion = (
   ...row,
   number,
   chosen,
-  history: { attempts, corrects, recent: [...(recent ?? "")].map((c) => c === "1") },
+  history: toHistory({ attempts, corrects, recent }),
   choices: StringsSchema.parse(JSON.parse(row.choices)),
   choice_meanings: StringsSchema.parse(JSON.parse(row.choice_meanings)),
   favorite: favorite === 1,
@@ -94,14 +110,16 @@ export const pickQuestionIds = async (
   groupId: number,
   count: number,
   filter: CardFilter,
+  kind: QuizKind,
 ) => {
   const { results } = await db
     .prepare(
       `SELECT q.id
          FROM group_words gw
          JOIN questions q ON q.word_id = gw.word_id
+         LEFT JOIN question_stats s ON s.question_id = q.id AND s.kind = '${kind}'
         WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${isFavorite("gw.word_id")}` : ""}
-        ORDER BY COALESCE(q.latest_correct, 0), RANDOM()
+        ORDER BY COALESCE(s.latest_correct, 0), RANDOM()
         LIMIT ?`,
     )
     .bind(groupId, count)
@@ -109,12 +127,27 @@ export const pickQuestionIds = async (
   return shuffle(results.map((q) => q.id));
 };
 
+export const recordAnswer = async (
+  db: D1Database,
+  kind: QuizKind,
+  questionId: number,
+  choice: number,
+) => {
+  await db
+    .prepare(
+      `INSERT INTO question_answers (question_id, kind, chosen, correct)
+       SELECT id, ?, ?, answer = ? FROM questions WHERE id = ?`,
+    )
+    .bind(kind, choice, choice, questionId)
+    .run();
+};
+
 export const getQuestions = async (db: D1Database, ids: number[]): Promise<QuizQuestion[]> => {
   if (ids.length === 0) return [];
   const { results } = await db
     .prepare(
       `SELECT ${QuestionColumns}
-         FROM questions q JOIN words w ON w.id = q.word_id
+         FROM ${questionsWithStats("sentence")}
         WHERE q.id IN (${ids.map(() => "?").join(", ")})`,
     )
     .bind(...ids)
@@ -132,17 +165,11 @@ export const answerQuestion = async (
   number: number,
   choice: number,
 ): Promise<QuizQuestion | null> => {
-  await db
-    .prepare(
-      `INSERT INTO question_answers (question_id, chosen, correct)
-       SELECT id, ?, answer = ? FROM questions WHERE id = ?`,
-    )
-    .bind(choice, choice, questionId)
-    .run();
+  await recordAnswer(db, "sentence", questionId, choice);
   const row = await db
     .prepare(
       `SELECT ${QuestionColumns}
-         FROM questions q JOIN words w ON w.id = q.word_id
+         FROM ${questionsWithStats("sentence")}
         WHERE q.id = ?`,
     )
     .bind(questionId)

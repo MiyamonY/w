@@ -11,11 +11,7 @@ import {
   listGroupWords,
   toggleFavorite,
 } from "./backend/db";
-import {
-  answerMeaningQuestion,
-  getMeaningQuestions,
-  pickMeaningQuestionIds,
-} from "./backend/meaning-quizzes";
+import { answerMeaningQuestion, getMeaningQuestions } from "./backend/meaning-quizzes";
 import { serveObject } from "./backend/storage";
 import { requireAccess } from "./backend/auth";
 import { generatePassage, PassageError } from "./backend/openai";
@@ -167,7 +163,7 @@ app.post("/groups/:id{[0-9]+}/quizzes", async (c) => {
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
   const { count, only } = QuizRequestSchema.parse(await c.req.parseBody());
-  const ids = await pickQuestionIds(c.env.DB, id, count, only);
+  const ids = await pickQuestionIds(c.env.DB, id, count, only, "sentence");
   if (ids.length === 0) {
     return c.html(
       <QuizForm
@@ -215,7 +211,7 @@ app.post("/groups/:id{[0-9]+}/meaning-quizzes", async (c) => {
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
   const { count, only } = QuizRequestSchema.parse(await c.req.parseBody());
-  const ids = await pickMeaningQuestionIds(c.env.DB, id, count, only);
+  const ids = await pickQuestionIds(c.env.DB, id, count, only, "meaning");
   if (ids.length === 0) {
     return c.html(
       <MeaningQuizForm
