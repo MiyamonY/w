@@ -22,7 +22,7 @@ export const Deck = (props: Props) => {
         id="deck"
         data-group-id={String(group.id)}
         data-word-ids={JSON.stringify(wordIds)}
-        class="relative my-6 min-h-105 touch-pan-y overflow-hidden select-none"
+        class="relative my-6 min-h-110 touch-pan-y overflow-hidden select-none"
         hx-target="#deck"
         hx-swap="innerHTML swap:250ms"
         data-front-ms={String(settings.front_ms)}
@@ -43,9 +43,10 @@ export const Deck = (props: Props) => {
         <button
           id="toggle-play"
           type="button"
+          aria-label="再生"
           class="cursor-pointer rounded-full bg-blue-700 px-6 py-2.5 text-lg text-white shadow"
         >
-          ▶ スタート
+          ▶
         </button>
         <label class="flex items-center gap-1.5">
           <input id="auto-audio" type="checkbox" checked /> 自動

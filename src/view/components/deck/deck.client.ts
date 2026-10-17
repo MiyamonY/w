@@ -154,7 +154,10 @@ const setupDeck = (deck: HTMLElement) => {
 
   const setPlaying = (value: boolean) => {
     playing = value;
-    if (toggleBtn) toggleBtn.textContent = playing ? "⏸ 一時停止" : "▶ 再生";
+    if (toggleBtn) {
+      toggleBtn.textContent = playing ? "⏸" : "▶";
+      toggleBtn.ariaLabel = playing ? "一時停止" : "再生";
+    }
     keepScreenOn(playing);
     if (playing) run();
     else stop();
