@@ -31,8 +31,10 @@ const flip = (force?: boolean) => {
   card()?.classList.toggle("flipped", force);
 };
 
-const currentFilter = (c: HTMLElement) =>
-  c.dataset.urlTemplate?.includes("only=favorites") ? "favorites" : "all";
+type Filter = "all" | "favorites";
+const toFilter = (value: string | undefined): Filter =>
+  value === "favorites" ? "favorites" : "all";
+const currentFilter = (c: HTMLElement) => toFilter(c.dataset.filter);
 
 let wakeLock: WakeLockSentinel | null = null;
 const keepScreenOn = async (on: boolean) => {
@@ -102,6 +104,17 @@ const parseProgress = (value: string | null, total: number): Progress | null => 
 };
 
 const setupDeck = (deck: HTMLElement) => {
+  const wordIds: Record<Filter, number[]> = {
+    all: [],
+    favorites: [],
+    ...JSON.parse(deck.dataset.wordIds ?? "{}"),
+  };
+  const cardUrl = (filter: Filter, index: number) => {
+    const ids = wordIds[filter];
+    const params = new URLSearchParams({ index: String(index), total: String(ids.length) });
+    if (filter === "favorites") params.set("only", "favorites");
+    return `/groups/${deck.dataset.groupId}/cards/${ids[index]}?${params}`;
+  };
   const frontMs = Number(deck.dataset.frontMs);
   const backMs = Number(deck.dataset.backMs);
   const examplesOnFront = deck.dataset.examplesOnFront === "true";
@@ -229,7 +242,8 @@ const setupDeck = (deck: HTMLElement) => {
     dialog.addEventListener("click", (e) => {
       const button = closest(e.target, "[data-start]");
       const row = closest(e.target, "section[data-filter]");
-      if (!button || !row?.dataset.urlTemplate) return;
+      if (!button || !row) return;
+      const filter = toFilter(row.dataset.filter);
       dialog.close();
       const total = Number(row.dataset.total);
       const progress =
@@ -257,7 +271,7 @@ const setupDeck = (deck: HTMLElement) => {
       playing = true;
       keepScreenOn(true);
       if (toggleBtn) toggleBtn.textContent = "⏸ 一時停止";
-      htmx.ajax("get", row.dataset.urlTemplate.replace("{index}", String(index)), {
+      htmx.ajax("get", cardUrl(filter, index), {
         target: deck,
         swap: "innerHTML",
       });
@@ -287,10 +301,10 @@ const setupDeck = (deck: HTMLElement) => {
   };
 
   const loadCard = (index: number, dir: Dir) => {
-    const template = card()?.dataset.urlTemplate;
-    if (!template) return;
+    const c = card();
+    if (!c) return;
     deck.dataset.dir = dir;
-    htmx.ajax("get", template.replace("{index}", String(index)), {
+    htmx.ajax("get", cardUrl(currentFilter(c), index), {
       target: deck,
       swap: "innerHTML swap:250ms",
     });
@@ -315,9 +329,9 @@ const setupDeck = (deck: HTMLElement) => {
   const advance = () => go("next");
 
   const preloadNext = () => {
-    const template = card()?.dataset.urlTemplate;
-    if (!template || sequence.length < 2 || step === sequence.length - 1) return;
-    preloadCard(template.replace("{index}", String(sequence[step + 1])));
+    const c = card();
+    if (!c || sequence.length < 2 || step === sequence.length - 1) return;
+    preloadCard(cardUrl(currentFilter(c), sequence[step + 1] ?? 0));
   };
 
   for (const button of document.querySelectorAll<HTMLElement>("[data-nav-button]")) {

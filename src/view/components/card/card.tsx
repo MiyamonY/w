@@ -23,8 +23,6 @@ const Face =
 export const Card = (props: Props) => {
   const { groupId, index, total, word, showExamplesOnFront, filter = "all" } = props;
   const groups = word.groups.filter((g) => g.id !== groupId);
-  const cardUrl = (i: number) =>
-    `/groups/${groupId}/cards/${i}${filter === "favorites" ? "?only=favorites" : ""}`;
   return (
     <article
       id="card"
@@ -32,7 +30,7 @@ export const Card = (props: Props) => {
       data-audio={audioUrl(word.audio_key)}
       data-index={String(index)}
       data-total={String(total)}
-      data-url-template={cardUrl(0).replace("/cards/0", "/cards/{index}")}
+      data-filter={filter}
     >
       <div class="relative flex-1 cursor-pointer perspective-[1000px]">
         <FavoriteButton wordId={word.id} favorite={word.favorite} variant="corner" />

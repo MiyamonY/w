@@ -25,6 +25,12 @@ const PagingQuerySchema = z.object({
   per: coercedLiteral(PerPageOptions, DefaultPerPage),
 });
 
+export const CardQuerySchema = z.object({
+  index: z.catch(coercedInt(0), 0),
+  total: z.catch(coercedInt(1), 1),
+  only: CardFilterSchema,
+});
+
 export const StartIndexSchema = z.catch(coercedInt(0), 0);
 
 export const GroupFilterSchema = z.catch(z.optional(coercedInt(1)), undefined);

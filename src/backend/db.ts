@@ -53,7 +53,9 @@ export const getGroup = async (db: D1Database, id: number): Promise<Group | null
 };
 
 export const countWords = async (db: D1Database): Promise<number> => {
-  return (await db.prepare(`SELECT COUNT(*) AS n FROM words`).first<number>("n")) ?? 0;
+  return (
+    (await db.prepare(`SELECT count FROM word_totals WHERE id = 1`).first<number>("count")) ?? 0
+  );
 };
 
 const ExamplesJson = `
@@ -144,22 +146,25 @@ export const countGroupFavorites = async (db: D1Database, groupId: number): Prom
   return n ?? 0;
 };
 
-export const getWordAt = async (
+export const listCardWordIds = async (
   db: D1Database,
   groupId: number,
-  index: number,
-  filter: CardFilter = "all",
-): Promise<WordWithGroups | null> => {
-  const row = await db
+  filter: CardFilter,
+): Promise<number[]> => {
+  const { results } = await db
     .prepare(
-      `SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults}
-         FROM words w
-        WHERE w.id = (
-          SELECT word_id FROM (${filter === "favorites" ? GroupFavoriteIds : GroupWordIds})
-           ORDER BY sort_order, word_id
-           LIMIT 1 OFFSET ?)`,
+      `SELECT word_id FROM (${filter === "favorites" ? GroupFavoriteIds : GroupWordIds})
+        ORDER BY sort_order, word_id`,
     )
-    .bind(groupId, index)
+    .bind(groupId)
+    .all<{ word_id: number }>();
+  return results.map((row) => row.word_id);
+};
+
+export const getWord = async (db: D1Database, wordId: number): Promise<WordWithGroups | null> => {
+  const row = await db
+    .prepare(`SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults} FROM words w WHERE w.id = ?`)
+    .bind(wordId)
     .first<WordWithGroupsRow>();
   return row && toWordWithGroups(row);
 };

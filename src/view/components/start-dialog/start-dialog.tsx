@@ -2,7 +2,6 @@ import type { CardFilter } from "../../../backend/db";
 import { PlayOrderLabels, PlayOrders } from "../../helper/play-order";
 
 type Props = {
-  groupId: number;
   allCount: number;
   favoritesCount: number;
 };
@@ -13,14 +12,12 @@ const choiceRow = (props: {
   filter: CardFilter;
   label: string;
   total: number;
-  urlTemplate: string;
   tone: string;
   button: string;
 }) => (
   <section
     data-filter={props.filter}
     data-total={String(props.total)}
-    data-url-template={props.urlTemplate}
     class={`rounded-xl p-3 ${props.tone}`}
   >
     <div class="flex items-center justify-between">
@@ -39,7 +36,7 @@ const choiceRow = (props: {
 );
 
 export const StartDialog = (props: Props) => {
-  const { groupId, allCount, favoritesCount } = props;
+  const { allCount, favoritesCount } = props;
   return (
     <dialog
       id="start-dialog"
@@ -68,7 +65,6 @@ export const StartDialog = (props: Props) => {
           filter: "all",
           label: "すべての単語",
           total: allCount,
-          urlTemplate: `/groups/${groupId}/cards/{index}`,
           tone: "bg-blue-50 text-blue-900",
           button: "bg-blue-700 text-white",
         })}
@@ -77,7 +73,6 @@ export const StartDialog = (props: Props) => {
             filter: "favorites",
             label: "★ お気に入りのみ",
             total: favoritesCount,
-            urlTemplate: `/groups/${groupId}/cards/{index}?only=favorites`,
             tone: "bg-amber-50 text-amber-900",
             button: "bg-amber-500 text-white",
           })}

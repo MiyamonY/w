@@ -1,1 +1,1 @@
-export { Deck } from "./deck";
+export { Deck, type WordIds } from "./deck";

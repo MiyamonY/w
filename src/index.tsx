@@ -5,7 +5,8 @@ import {
   countGroupFavorites,
   countWords,
   getGroup,
-  getWordAt,
+  getWord,
+  listCardWordIds,
   listAllWords,
   listGroups,
   listGroupWords,
@@ -33,7 +34,7 @@ import {
   QuizRequestSchema,
 } from "./backend/quizzes";
 import {
-  CardFilterSchema,
+  CardQuerySchema,
   GroupFilterSchema,
   resolvePaging,
   StartIndexSchema,
@@ -95,25 +96,25 @@ app.get("/groups/:id{[0-9]+}", async (c) => {
   const id = Number(c.req.param("id"));
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
-  const requested = StartIndexSchema.parse(c.req.query("start"));
-  const start = group.word_count > 0 ? requested % group.word_count : 0;
-  const showStartDialog = c.req.query("start") === undefined;
-  const [first, settings, favoritesCount] = await Promise.all([
-    group.word_count > 0 ? getWordAt(c.env.DB, id, start) : null,
+  const [allIds, favoriteIds, settings] = await Promise.all([
+    listCardWordIds(c.env.DB, id, "all"),
+    listCardWordIds(c.env.DB, id, "favorites"),
     getSettings(c.env.DB),
-    !showStartDialog
-      ? undefined
-      : group.kind === "favorites"
-        ? 0
-        : countGroupFavorites(c.env.DB, id),
   ]);
+  const requested = StartIndexSchema.parse(c.req.query("start"));
+  const start = allIds.length > 0 ? requested % allIds.length : 0;
+  const first = allIds.length > 0 ? await getWord(c.env.DB, allIds[start]) : null;
+  const showStartDialog = c.req.query("start") === undefined;
   return c.html(
     <Player
       group={group}
       start={start}
       first={first}
       settings={settings}
-      favoritesCount={favoritesCount}
+      wordIds={{ all: allIds, favorites: favoriteIds }}
+      favoritesCount={
+        !showStartDialog ? undefined : group.kind === "favorites" ? 0 : favoriteIds.length
+      }
     />,
   );
 });
@@ -122,25 +123,19 @@ app.get("/groups/:id{[0-9]+}/words", (c) =>
   c.redirect(wordsUrl({ group: Number(c.req.param("id")) }), 301),
 );
 
-app.get("/groups/:id{[0-9]+}/cards/:index{[0-9]+}", async (c) => {
-  const id = Number(c.req.param("id"));
-  const group = await getGroup(c.env.DB, id);
-  if (!group) return c.notFound();
-  const filter = CardFilterSchema.parse(c.req.query("only"));
-  const total = filter === "favorites" ? await countGroupFavorites(c.env.DB, id) : group.word_count;
-  if (total === 0) return c.notFound();
-  const index = Number(c.req.param("index")) % total;
+app.get("/groups/:id{[0-9]+}/cards/:wordId{[0-9]+}", async (c) => {
+  const { index, total, only } = CardQuerySchema.parse(c.req.query());
   const [word, settings] = await Promise.all([
-    getWordAt(c.env.DB, id, index, filter),
+    getWord(c.env.DB, Number(c.req.param("wordId"))),
     getSettings(c.env.DB),
   ]);
   if (!word) return c.notFound();
   return c.html(
     <Card
-      groupId={id}
+      groupId={Number(c.req.param("id"))}
       index={index}
       total={total}
-      filter={filter}
+      filter={only}
       word={word}
       showExamplesOnFront={settings.show_examples_on_front}
     />,
