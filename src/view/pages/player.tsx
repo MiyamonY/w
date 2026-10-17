@@ -1,4 +1,4 @@
-import type { CardFilter, Group, WordWithGroups } from "../../backend/db";
+import type { CardFilter, Group, Word } from "../../backend/db";
 import type { Settings } from "../../backend/settings";
 import { Deck } from "../components/deck";
 import { Layout } from "../components/layout";
@@ -8,7 +8,7 @@ import { wordsUrl } from "../helper/words-url";
 type Props = {
   group: Group;
   start: number;
-  first: WordWithGroups | null;
+  first: Word | null;
   settings: Settings;
   wordIds: number[];
   filter: CardFilter;

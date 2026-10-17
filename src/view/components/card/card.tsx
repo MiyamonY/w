@@ -1,9 +1,8 @@
-import type { CardFilter, WordWithGroups } from "../../../backend/db";
+import type { CardFilter, Word } from "../../../backend/db";
 import { audioUrl } from "../../helper/audio-url";
 import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
 import { FavoriteButton } from "../favorite-button";
-import { GroupTags } from "../group-tags";
 import { SpeakButton } from "../speak-button";
 import { WordImage } from "../word-image";
 
@@ -11,7 +10,7 @@ type Props = {
   groupId: number;
   index: number;
   total: number;
-  word: WordWithGroups;
+  word: Word;
   showExamplesOnFront: boolean;
   filter?: CardFilter;
 };
@@ -21,7 +20,6 @@ const Face =
 
 export const Card = (props: Props) => {
   const { groupId, index, total, word, showExamplesOnFront, filter = "all" } = props;
-  const groups = word.groups.filter((g) => g.id !== groupId);
   return (
     <article
       id="card"
@@ -55,12 +53,12 @@ export const Card = (props: Props) => {
               ))}
             </ul>
           )}
-          <div class="absolute inset-x-4 bottom-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
-            <a href={`/groups/${groupId}/tests`} class="text-blue-700">
-              4択テスト
-            </a>
-            <GroupTags groups={groups} />
-          </div>
+          <a
+            href={`/groups/${groupId}/tests`}
+            class="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-blue-700"
+          >
+            4択テスト
+          </a>
         </div>
         <div class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}>
           <div class="flex items-center gap-1">

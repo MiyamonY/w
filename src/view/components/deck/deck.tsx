@@ -1,4 +1,4 @@
-import type { CardFilter, Group, WordWithGroups } from "../../../backend/db";
+import type { CardFilter, Group, Word } from "../../../backend/db";
 import type { Settings } from "../../../backend/settings";
 import { DefaultPlaybackRate, formatPlaybackRate, PlaybackRates } from "../../helper/playback-rate";
 import { Card } from "../card";
@@ -7,7 +7,7 @@ import { CardPosition } from "../card-position";
 type Props = {
   group: Group;
   start: number;
-  first: WordWithGroups | null;
+  first: Word | null;
   settings: Settings;
   wordIds: number[];
   filter: CardFilter;

@@ -161,12 +161,12 @@ export const listCardWordIds = async (
   return results.map((row) => row.word_id);
 };
 
-export const getWord = async (db: D1Database, wordId: number): Promise<WordWithGroups | null> => {
+export const getWord = async (db: D1Database, wordId: number): Promise<Word | null> => {
   const row = await db
-    .prepare(`SELECT ${WordColumns}, ${GroupsJson} FROM words w WHERE w.id = ?`)
+    .prepare(`SELECT ${WordColumns} FROM words w WHERE w.id = ?`)
     .bind(wordId)
-    .first<WordWithGroupsRow>();
-  return row && toWordWithGroups(row);
+    .first<WordRow>();
+  return row && toWord(row);
 };
 
 export const listGroupWords = async (
