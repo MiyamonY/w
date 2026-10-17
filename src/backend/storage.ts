@@ -13,7 +13,7 @@ export const serveObject = async (
   obj.writeHttpMetadata(headers);
   headers.set("etag", obj.httpEtag);
   headers.set("accept-ranges", "bytes");
-  headers.set("cache-control", "public, max-age=86400");
+  headers.set("cache-control", "public, max-age=31536000, immutable");
 
   if (rangeHeader && obj.range) {
     const { start, end } = resolveRange(obj.range, obj.size);

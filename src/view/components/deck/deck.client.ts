@@ -48,6 +48,28 @@ const updateMediaSession = () => {
 
 const PlayOrderStorageKey = "playDirection";
 
+const preloaded: HTMLAudioElement[] = [];
+const preloadAudio = (src: string) => {
+  if (preloaded.some((audio) => audio.src.endsWith(src))) return;
+  const audio = new Audio();
+  audio.preload = "auto";
+  audio.src = src;
+  preloaded.push(audio);
+  if (preloaded.length > 8) preloaded.shift();
+};
+
+const preloadCard = async (url: string) => {
+  const res = await fetch(url).catch(() => null);
+  if (!res?.ok) return;
+  const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+  for (const el of doc.querySelectorAll<HTMLElement>("#card[data-audio], .example[data-audio]")) {
+    if (el.dataset.audio) preloadAudio(el.dataset.audio);
+  }
+  for (const img of doc.querySelectorAll("img[src]")) {
+    new Image().src = img.getAttribute("src") ?? "";
+  }
+};
+
 const buildSequence = (order: PlayOrder, total: number) =>
   order === "reverse"
     ? reverse(range(0, total))
@@ -301,6 +323,12 @@ const setupDeck = (deck: HTMLElement) => {
 
   const advance = () => go("next");
 
+  const preloadNext = () => {
+    const template = card()?.dataset.urlTemplate;
+    if (!template || sequence.length < 2 || step === sequence.length - 1) return;
+    preloadCard(template.replace("{index}", String(sequence[step + 1])));
+  };
+
   for (const button of document.querySelectorAll<HTMLElement>("[data-nav-button]")) {
     button.addEventListener("click", () =>
       go(button.dataset.navButton === "prev" ? "prev" : "next"),
@@ -331,12 +359,14 @@ const setupDeck = (deck: HTMLElement) => {
     jumpTo(Number(positionInput.value));
   });
   syncPosition();
+  preloadNext();
 
   document.body.addEventListener("htmx:afterSettle", (e) => {
     if (e.target !== deck) return;
     syncPosition();
     saveProgress();
     updateMediaSession();
+    preloadNext();
     if (playing) run();
     else playCurrentFace();
   });
