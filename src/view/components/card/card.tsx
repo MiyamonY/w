@@ -77,7 +77,7 @@ export const Card = (props: Props) => {
               class="cursor-pointer p-1 leading-none"
             />
           </div>
-          <WordImage wordId={word.id} imageKey={word.image_key} />
+          <WordImage imageKey={word.image_key} />
           <div class="text-3xl font-semibold">{word.meaning}</div>
           {word.examples.length > 0 && <Examples examples={word.examples} />}
         </div>

@@ -12,7 +12,6 @@ import {
   listGroupWords,
   toggleFavorite,
 } from "./backend/db";
-import { claimImage, generateImage, getImageKey } from "./backend/images";
 import { serveObject } from "./backend/storage";
 import { requireAccess } from "./backend/auth";
 import { generatePassage, PassageError } from "./backend/openai";
@@ -43,7 +42,6 @@ import { getSettings, SettingsSchema, updateSettings } from "./backend/settings"
 import { Card } from "./view/components/card";
 import { FavoriteButton, FavoriteButtonVariants } from "./view/components/favorite-button";
 import { TestForm } from "./view/components/test-form";
-import { WordImage } from "./view/components/word-image";
 import { QuizForm } from "./view/components/quiz-form";
 import { QuizQuestion } from "./view/components/quiz-question";
 import { PagedWordTable } from "./view/components/paged-word-table";
@@ -147,19 +145,6 @@ app.post("/words/:id{[0-9]+}/favorite", async (c) => {
   const variant = z.catch(z.enum(FavoriteButtonVariants), "inline").parse(c.req.query("variant"));
   const favorite = await toggleFavorite(c.env.DB, wordId);
   return c.html(<FavoriteButton wordId={wordId} favorite={favorite} variant={variant} />);
-});
-
-app.post("/words/:id{[0-9]+}/image", async (c) => {
-  const wordId = Number(c.req.param("id"));
-  let key = await getImageKey(c.env.DB, wordId);
-  if (!key) {
-    if (!(await claimImage(c.env.DB, wordId))) return c.body(null, 204);
-    const generating = generateImage(c.env, c.env.DB, c.env.AUDIO, c.env.IMAGES, wordId);
-    c.executionCtx.waitUntil(generating);
-    key = await generating;
-  }
-  if (!key) return c.body(null, 204);
-  return c.html(<WordImage wordId={wordId} imageKey={key} />);
 });
 
 app.get("/images/:key{.+}", (c) =>

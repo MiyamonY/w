@@ -23,7 +23,6 @@ jobs:
       WORKER_ACCESS_TEAM_DOMAIN: ${{ secrets.WORKER_ACCESS_TEAM_DOMAIN }}
       WORKER_ACCESS_AUD: ${{ secrets.WORKER_ACCESS_AUD }}
       WORKER_OPENAI_MODEL: ${{ vars.WORKER_OPENAI_MODEL }}
-      WORKER_OPENAI_IMAGE_MODEL: ${{ vars.WORKER_OPENAI_IMAGE_MODEL }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
