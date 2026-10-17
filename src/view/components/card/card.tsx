@@ -4,7 +4,6 @@ import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
 import { FavoriteButton } from "../favorite-button";
 import { GroupTags } from "../group-tags";
-import { QuizResults } from "../quiz-results";
 import { SpeakButton } from "../speak-button";
 import { WordImage } from "../word-image";
 
@@ -56,16 +55,12 @@ export const Card = (props: Props) => {
               ))}
             </ul>
           )}
-          {(word.quiz_results.length > 0 || groups.length > 0) && (
-            <div class="absolute inset-x-4 bottom-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
-              {word.quiz_results.length > 0 && (
-                <span class="text-neutral-400">
-                  4択 <QuizResults results={word.quiz_results} />
-                </span>
-              )}
-              <GroupTags groups={groups} />
-            </div>
-          )}
+          <div class="absolute inset-x-4 bottom-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+            <a href={`/groups/${groupId}/tests`} class="text-blue-700">
+              4択テスト
+            </a>
+            <GroupTags groups={groups} />
+          </div>
         </div>
         <div class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}>
           <div class="flex items-center gap-1">

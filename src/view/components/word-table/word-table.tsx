@@ -1,4 +1,4 @@
-import type { WordWithGroups } from "../../../backend/db";
+import type { ListedWord } from "../../../backend/db";
 import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
 import { FavoriteButton } from "../favorite-button";
@@ -7,7 +7,7 @@ import { QuizResults } from "../quiz-results";
 import { SpeakButton } from "../speak-button";
 
 type Props = {
-  words: WordWithGroups[];
+  words: ListedWord[];
   cardHref?: (index: number) => string;
   currentGroupId?: number;
 };

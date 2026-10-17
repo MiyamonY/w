@@ -36,7 +36,8 @@ export type Word = {
 };
 
 export type GroupRef = { id: number; name: string };
-export type WordWithGroups = Word & { groups: GroupRef[]; quiz_results: boolean[] };
+export type WordWithGroups = Word & { groups: GroupRef[] };
+export type ListedWord = WordWithGroups & { quiz_results: boolean[] };
 
 const GroupColumns = `id, name, description, kind, word_count, favorite_count,
        question_count, answered_count, latest_correct_count`;
@@ -123,7 +124,8 @@ type WordRow = Omit<Word, "examples" | "numbers" | "favorite"> & {
   numbers_json: string;
   favorite: number;
 };
-type WordWithGroupsRow = WordRow & { groups_json: string; quiz_results: string | null };
+type WordWithGroupsRow = WordRow & { groups_json: string };
+type ListedWordRow = WordWithGroupsRow & { quiz_results: string | null };
 
 const toWord = ({ examples_json, numbers_json, favorite, ...w }: WordRow): Word => ({
   ...w,
@@ -132,13 +134,13 @@ const toWord = ({ examples_json, numbers_json, favorite, ...w }: WordRow): Word 
   favorite: favorite === 1,
 });
 
-const toWordWithGroups = ({
-  groups_json,
-  quiz_results,
-  ...row
-}: WordWithGroupsRow): WordWithGroups => ({
+const toWordWithGroups = ({ groups_json, ...row }: WordWithGroupsRow): WordWithGroups => ({
   ...toWord(row),
   groups: JSON.parse(groups_json) as GroupRef[],
+});
+
+const toListedWord = ({ quiz_results, ...row }: ListedWordRow): ListedWord => ({
+  ...toWordWithGroups(row),
   quiz_results: [...(quiz_results ?? "")].map((c) => c === "1"),
 });
 
@@ -161,7 +163,7 @@ export const listCardWordIds = async (
 
 export const getWord = async (db: D1Database, wordId: number): Promise<WordWithGroups | null> => {
   const row = await db
-    .prepare(`SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults} FROM words w WHERE w.id = ?`)
+    .prepare(`SELECT ${WordColumns}, ${GroupsJson} FROM words w WHERE w.id = ?`)
     .bind(wordId)
     .first<WordWithGroupsRow>();
   return row && toWordWithGroups(row);
@@ -171,7 +173,7 @@ export const listGroupWords = async (
   db: D1Database,
   groupId: number,
   range: { limit: number; offset: number },
-): Promise<WordWithGroups[]> => {
+): Promise<ListedWord[]> => {
   const { results } = await db
     .prepare(
       `SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults}
@@ -180,14 +182,14 @@ export const listGroupWords = async (
         ORDER BY page.sort_order, page.word_id`,
     )
     .bind(groupId, range.limit, range.offset)
-    .all<WordWithGroupsRow>();
-  return results.map(toWordWithGroups);
+    .all<ListedWordRow>();
+  return results.map(toListedWord);
 };
 
 export const listAllWords = async (
   db: D1Database,
   range: { limit: number; offset: number },
-): Promise<WordWithGroups[]> => {
+): Promise<ListedWord[]> => {
   const { results } = await db
     .prepare(
       `SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults}
@@ -196,8 +198,8 @@ export const listAllWords = async (
         ORDER BY w.id`,
     )
     .bind(range.limit, range.offset)
-    .all<WordWithGroupsRow>();
-  return results.map(toWordWithGroups);
+    .all<ListedWordRow>();
+  return results.map(toListedWord);
 };
 
 export const toggleFavorite = async (db: D1Database, wordId: number): Promise<boolean> => {

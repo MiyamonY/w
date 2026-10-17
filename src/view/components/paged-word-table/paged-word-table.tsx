@@ -1,4 +1,4 @@
-import type { Group, WordWithGroups } from "../../../backend/db";
+import type { Group, ListedWord } from "../../../backend/db";
 import type { Paging } from "../../../backend/paging";
 import { wordsUrl } from "../../helper/words-url";
 import { Pagination } from "../pagination";
@@ -6,7 +6,7 @@ import { WordListFilter } from "../word-list-filter";
 import { WordTable } from "../word-table";
 
 type Props = {
-  words: WordWithGroups[];
+  words: ListedWord[];
   paging: Paging;
   groups: Group[];
   groupId?: number;
