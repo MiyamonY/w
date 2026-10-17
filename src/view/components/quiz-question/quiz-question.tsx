@@ -3,7 +3,6 @@ import { FavoriteButton } from "../favorite-button";
 import { SpeakButton } from "../speak-button";
 
 type Props = {
-  quizId: number;
   question: Question;
 };
 
@@ -34,15 +33,26 @@ const Sentence = (props: { question: Question }) => {
 };
 
 export const QuizQuestion = (props: Props) => {
-  const { quizId, question } = props;
+  const { question } = props;
   const answered = question.chosen !== null;
+  const correct = question.chosen === question.answer;
+  const { attempts, corrects } = question.history;
   return (
-    <section id={`question-${question.id}`} class="rounded-xl bg-white p-4 shadow-sm">
+    <section
+      id={`question-${question.id}`}
+      data-result={answered ? (correct ? "correct" : "wrong") : undefined}
+      class="rounded-xl bg-white p-4 shadow-sm"
+    >
       <div class="mb-2 flex items-center gap-2 text-sm text-neutral-500">
         <span>({question.number})</span>
         {answered && (
-          <span class={question.chosen === question.answer ? "text-green-700" : "text-red-700"}>
-            {question.chosen === question.answer ? "正解" : "不正解"}
+          <span class={correct ? "text-green-700" : "text-red-700"}>
+            {correct ? "正解" : "不正解"}
+          </span>
+        )}
+        {answered && (
+          <span class="ml-auto text-xs">
+            これまで {attempts} 回中 {corrects} 回正解
           </span>
         )}
       </div>
@@ -53,8 +63,10 @@ export const QuizQuestion = (props: Props) => {
             <button
               type="button"
               disabled={answered}
-              hx-post={answered ? undefined : `/quizzes/${quizId}/questions/${question.id}/answer`}
-              hx-vals={answered ? undefined : JSON.stringify({ choice: i })}
+              hx-post={answered ? undefined : `/questions/${question.id}/answer`}
+              hx-vals={
+                answered ? undefined : JSON.stringify({ choice: i, number: question.number })
+              }
               hx-target={`#question-${question.id}`}
               hx-swap="outerHTML"
               class={`flex w-full items-baseline gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-left ${choiceTone(question, i)}`}

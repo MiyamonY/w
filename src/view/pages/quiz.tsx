@@ -1,25 +1,24 @@
-import { type Quiz, scoreOf } from "../../backend/quizzes";
+import type { Group } from "../../backend/db";
+import type { QuizQuestion as Question } from "../../backend/quizzes";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
 import { QuizQuestion } from "../components/quiz-question";
 import { QuizScore } from "../components/quiz-score";
 
 type Props = {
-  quiz: Quiz;
+  group: Group;
+  questions: Question[];
 };
 
 export const QuizPage = (props: Props) => {
-  const { quiz } = props;
+  const { group, questions } = props;
   return (
-    <Layout title={`${quiz.group_name} の4択問題 - 単語帳`}>
-      <PageHeader
-        title={`${quiz.group_name} の4択問題`}
-        backHref={`/groups/${quiz.group_id}/tests`}
-      />
-      <QuizScore score={scoreOf(quiz.questions)} />
+    <Layout title={`${group.name} の4択問題 - 単語帳`}>
+      <PageHeader title={`${group.name} の4択問題`} backHref={`/groups/${group.id}/tests`} />
+      <QuizScore total={questions.length} />
       <div class="mt-2 grid gap-3">
-        {quiz.questions.map((q) => (
-          <QuizQuestion quizId={quiz.id} question={q} />
+        {questions.map((q) => (
+          <QuizQuestion question={q} />
         ))}
       </div>
     </Layout>

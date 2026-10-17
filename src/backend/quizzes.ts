@@ -10,17 +10,27 @@ export const QuizRequestSchema = z.object({
   only: CardFilterSchema,
 });
 
-export const ChoiceSchema = coercedInt(0, 3);
+export const AnswerSchema = z.object({
+  choice: coercedInt(0, 3),
+  number: coercedInt(1),
+});
+
+export const QuestionIdsSchema = z.catch(
+  z.pipe(
+    z.string(),
+    z.transform((value) =>
+      value
+        .split(",")
+        .map(Number)
+        .filter((id) => Number.isInteger(id) && id > 0),
+    ),
+  ),
+  [],
+);
 
 const StringsSchema = z.array(z.string());
 
-export type QuizSummary = {
-  id: number;
-  created_at: string;
-  question_count: number;
-  answered_count: number;
-  correct_count: number;
-};
+export type QuestionHistory = { attempts: number; corrects: number };
 
 export type QuizQuestion = {
   id: number;
@@ -32,6 +42,7 @@ export type QuizQuestion = {
   translation: string;
   explanation: string;
   chosen: number | null;
+  history: QuestionHistory;
   word_id: number;
   term: string;
   meaning: string;
@@ -39,48 +50,60 @@ export type QuizQuestion = {
   favorite: boolean;
 };
 
-export type Quiz = {
-  id: number;
-  group_id: number;
-  group_name: string;
-  created_at: string;
-  questions: QuizQuestion[];
-};
+export type GroupQuizStats = { questions: number; answered: number; latest_correct: number };
 
-export type QuizScore = { total: number; answered: number; correct: number };
-
-type QuizQuestionRow = Omit<QuizQuestion, "choices" | "choice_meanings" | "favorite"> & {
+type QuestionRow = Omit<
+  QuizQuestion,
+  "number" | "choices" | "choice_meanings" | "chosen" | "history" | "favorite"
+> & {
   choices: string;
   choice_meanings: string;
+  attempts: number;
+  corrects: number;
   favorite: number;
 };
 
-const QuestionColumns = `q.id, qq.number, q.sentence, q.choices, q.answer, q.choice_meanings,
-       q.translation, q.explanation, qq.chosen, w.id AS word_id, w.term, w.meaning, w.audio_key,
+const QuestionColumns = `q.id, q.sentence, q.choices, q.answer, q.choice_meanings,
+       q.translation, q.explanation, w.id AS word_id, w.term, w.meaning, w.audio_key,
+       (SELECT COUNT(*) FROM question_answers a WHERE a.question_id = q.id) AS attempts,
+       (SELECT COUNT(*) FROM question_answers a WHERE a.question_id = q.id AND a.correct = 1) AS corrects,
        ${IsFavorite} AS favorite`;
 
-const toQuestion = (row: QuizQuestionRow): QuizQuestion => ({
+const toQuestion = (
+  { attempts, corrects, favorite, ...row }: QuestionRow,
+  number: number,
+  chosen: number | null,
+): QuizQuestion => ({
   ...row,
+  number,
+  chosen,
+  history: { attempts, corrects },
   choices: StringsSchema.parse(JSON.parse(row.choices)),
   choice_meanings: StringsSchema.parse(JSON.parse(row.choice_meanings)),
-  favorite: row.favorite === 1,
+  favorite: favorite === 1,
 });
 
-export const countGroupQuestions = async (db: D1Database, groupId: number) =>
+export const getGroupQuizStats = async (db: D1Database, groupId: number) =>
   (await db
     .prepare(
-      `SELECT COUNT(*) AS n FROM group_words gw JOIN questions q ON q.word_id = gw.word_id
+      `SELECT COUNT(*) AS questions,
+              COUNT(latest.correct) AS answered,
+              COALESCE(SUM(latest.correct), 0) AS latest_correct
+         FROM group_words gw
+         JOIN questions q ON q.word_id = gw.word_id
+         LEFT JOIN question_answers latest ON latest.id =
+              (SELECT MAX(a.id) FROM question_answers a WHERE a.question_id = q.id)
         WHERE gw.group_id = ?`,
     )
     .bind(groupId)
-    .first<number>("n")) ?? 0;
+    .first<GroupQuizStats>()) ?? { questions: 0, answered: 0, latest_correct: 0 };
 
-export const createQuiz = async (
+export const pickQuestionIds = async (
   db: D1Database,
   groupId: number,
   count: number,
   filter: CardFilter,
-): Promise<number | null> => {
+) => {
   const { results } = await db
     .prepare(
       `SELECT q.id
@@ -93,108 +116,46 @@ export const createQuiz = async (
     )
     .bind(groupId, count)
     .all<{ id: number }>();
-  if (results.length === 0) return null;
-  const quiz = await db
-    .prepare(`INSERT INTO quizzes (group_id) VALUES (?) RETURNING id`)
-    .bind(groupId)
-    .first<{ id: number }>();
-  if (!quiz) throw new Error("quizzes への保存に失敗しました");
-  await db.batch(
-    results.map((q, i) =>
-      db
-        .prepare(`INSERT INTO quiz_questions (quiz_id, question_id, number) VALUES (?, ?, ?)`)
-        .bind(quiz.id, q.id, i + 1),
-    ),
-  );
-  return quiz.id;
+  return results.map((q) => q.id);
 };
 
-export const listQuizzes = async (db: D1Database, groupId: number): Promise<QuizSummary[]> => {
-  const { results } = await db
-    .prepare(
-      `SELECT z.id, z.created_at,
-              COUNT(*) AS question_count,
-              COUNT(qq.chosen) AS answered_count,
-              COALESCE(SUM(qq.chosen = q.answer), 0) AS correct_count
-         FROM quizzes z
-         JOIN quiz_questions qq ON qq.quiz_id = z.id
-         JOIN questions q ON q.id = qq.question_id
-        WHERE z.group_id = ?
-        GROUP BY z.id
-        ORDER BY z.id DESC
-        LIMIT 50`,
-    )
-    .bind(groupId)
-    .all<QuizSummary>();
-  return results;
-};
-
-export const getQuiz = async (db: D1Database, id: number): Promise<Quiz | null> => {
-  const quiz = await db
-    .prepare(
-      `SELECT z.id, z.group_id, g.name AS group_name, z.created_at
-         FROM quizzes z JOIN word_groups g ON g.id = z.group_id
-        WHERE z.id = ?`,
-    )
-    .bind(id)
-    .first<Omit<Quiz, "questions">>();
-  if (!quiz) return null;
+export const getQuestions = async (db: D1Database, ids: number[]): Promise<QuizQuestion[]> => {
+  if (ids.length === 0) return [];
   const { results } = await db
     .prepare(
       `SELECT ${QuestionColumns}
-         FROM quiz_questions qq
-         JOIN questions q ON q.id = qq.question_id
-         JOIN words w ON w.id = q.word_id
-        WHERE qq.quiz_id = ?
-        ORDER BY qq.number`,
+         FROM questions q JOIN words w ON w.id = q.word_id
+        WHERE q.id IN (${ids.map(() => "?").join(", ")})`,
     )
-    .bind(id)
-    .all<QuizQuestionRow>();
-  return { ...quiz, questions: results.map(toQuestion) };
+    .bind(...ids)
+    .all<QuestionRow>();
+  const rows = new Map(results.map((row) => [row.id, row]));
+  return ids.flatMap((id, i) => {
+    const row = rows.get(id);
+    return row ? [toQuestion(row, i + 1, null)] : [];
+  });
 };
 
 export const answerQuestion = async (
   db: D1Database,
-  quizId: number,
   questionId: number,
+  number: number,
   choice: number,
-): Promise<{ question: QuizQuestion; score: QuizScore } | null> => {
+): Promise<QuizQuestion | null> => {
   await db
     .prepare(
-      `UPDATE quiz_questions SET chosen = ?
-        WHERE quiz_id = ? AND question_id = ? AND chosen IS NULL`,
+      `INSERT INTO question_answers (question_id, chosen, correct)
+       SELECT id, ?, answer = ? FROM questions WHERE id = ?`,
     )
-    .bind(choice, quizId, questionId)
+    .bind(choice, choice, questionId)
     .run();
   const row = await db
     .prepare(
       `SELECT ${QuestionColumns}
-         FROM quiz_questions qq
-         JOIN questions q ON q.id = qq.question_id
-         JOIN words w ON w.id = q.word_id
-        WHERE qq.quiz_id = ? AND qq.question_id = ?`,
+         FROM questions q JOIN words w ON w.id = q.word_id
+        WHERE q.id = ?`,
     )
-    .bind(quizId, questionId)
-    .first<QuizQuestionRow>();
-  if (!row) return null;
-  return { question: toQuestion(row), score: await getScore(db, quizId) };
+    .bind(questionId)
+    .first<QuestionRow>();
+  return row ? toQuestion(row, number, choice) : null;
 };
-
-export const getScore = async (db: D1Database, quizId: number): Promise<QuizScore> => {
-  const row = await db
-    .prepare(
-      `SELECT COUNT(*) AS total, COUNT(qq.chosen) AS answered,
-              COALESCE(SUM(qq.chosen = q.answer), 0) AS correct
-         FROM quiz_questions qq JOIN questions q ON q.id = qq.question_id
-        WHERE qq.quiz_id = ?`,
-    )
-    .bind(quizId)
-    .first<QuizScore>();
-  return row ?? { total: 0, answered: 0, correct: 0 };
-};
-
-export const scoreOf = (questions: QuizQuestion[]): QuizScore => ({
-  total: questions.length,
-  answered: questions.filter((q) => q.chosen !== null).length,
-  correct: questions.filter((q) => q.chosen === q.answer).length,
-});
