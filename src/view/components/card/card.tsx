@@ -27,8 +27,6 @@ export const Card = (props: Props) => {
       id="card"
       class="flex h-105 flex-col transition-[translate,rotate,opacity] duration-250 swap-in-next:translate-x-[110%] swap-in-next:opacity-0 swap-in-prev:-translate-x-[110%] swap-in-prev:opacity-0 swap-out-next:-translate-x-[110%] swap-out-next:-rotate-6 swap-out-next:opacity-0 swap-out-prev:translate-x-[110%] swap-out-prev:rotate-6 swap-out-prev:opacity-0"
       data-audio={audioUrl(word.audio_key)}
-      data-term={word.term}
-      data-meaning={word.meaning}
       data-index={String(index)}
       data-total={String(total)}
       data-url-template={cardUrl(0).replace("/cards/0", "/cards/{index}")}

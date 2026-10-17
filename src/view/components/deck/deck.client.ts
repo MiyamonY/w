@@ -6,7 +6,6 @@ import {
   stopAudio,
 } from "../../helper/audio-player.client";
 import { formatPlaybackRate, parsePlaybackRate } from "../../helper/playback-rate";
-import { silenceUrl } from "../../helper/silence.client";
 import {
   type PlayOrder,
   PlayOrderLabels,
@@ -35,16 +34,21 @@ const flip = (force?: boolean) => {
 const currentFilter = (c: HTMLElement) =>
   c.dataset.urlTemplate?.includes("only=favorites") ? "favorites" : "all";
 
-const updateMediaSession = () => {
-  const c = card();
-  if (!("mediaSession" in navigator) || !c) return;
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: c.dataset.term ?? "",
-    artist: c.dataset.meaning ?? "",
-    album: document.title,
-    artwork: [{ src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }],
+let wakeLock: WakeLockSentinel | null = null;
+const keepScreenOn = async (on: boolean) => {
+  if (!on) {
+    await wakeLock?.release();
+    wakeLock = null;
+    return;
+  }
+  if (wakeLock || !("wakeLock" in navigator) || document.visibilityState !== "visible") return;
+  wakeLock = await navigator.wakeLock.request("screen").catch(() => null);
+  wakeLock?.addEventListener("release", () => {
+    wakeLock = null;
   });
 };
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const PlayOrderStorageKey = "playDirection";
 
@@ -156,7 +160,7 @@ const setupDeck = (deck: HTMLElement) => {
       if (withAudio) await playQueue(srcs, my);
       if (my !== gen) return;
       const rest = minMs - (performance.now() - started);
-      if (rest >= 100) await playOne(silenceUrl(rest));
+      if (rest > 0) await wait(rest);
     };
     if (!c.classList.contains("flipped")) {
       await hold(frontAudios(c), frontMs);
@@ -171,8 +175,7 @@ const setupDeck = (deck: HTMLElement) => {
   const setPlaying = (value: boolean) => {
     playing = value;
     if (toggleBtn) toggleBtn.textContent = playing ? "⏸ 一時停止" : "▶ 再生";
-    if ("mediaSession" in navigator)
-      navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+    keepScreenOn(playing);
     if (playing) run();
     else stop();
   };
@@ -202,22 +205,9 @@ const setupDeck = (deck: HTMLElement) => {
   const savedProgress = (filter: string, total: number) =>
     parseProgress(localStorage.getItem(progressKey(filter)), total);
 
-  if ("mediaSession" in navigator) {
-    const handlers: [MediaSessionAction, () => void][] = [
-      ["play", () => setPlaying(true)],
-      ["pause", () => setPlaying(false)],
-      ["nexttrack", () => go("next")],
-      ["previoustrack", () => go("prev")],
-    ];
-    for (const [action, handler] of handlers) {
-      try {
-        navigator.mediaSession.setActionHandler(action, handler);
-      } catch {
-        continue;
-      }
-    }
-    updateMediaSession();
-  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") keepScreenOn(playing);
+  });
 
   const dialog = document.getElementById("start-dialog") as HTMLDialogElement | null;
   if (dialog) {
@@ -265,6 +255,7 @@ const setupDeck = (deck: HTMLElement) => {
         return;
       }
       playing = true;
+      keepScreenOn(true);
       if (toggleBtn) toggleBtn.textContent = "⏸ 一時停止";
       htmx.ajax("get", row.dataset.urlTemplate.replace("{index}", String(index)), {
         target: deck,
@@ -365,7 +356,6 @@ const setupDeck = (deck: HTMLElement) => {
     if (e.target !== deck) return;
     syncPosition();
     saveProgress();
-    updateMediaSession();
     preloadNext();
     if (playing) run();
     else playCurrentFace();
