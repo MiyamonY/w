@@ -37,11 +37,9 @@ export type WordWithGroups = Word & { groups: GroupRef[]; quiz_results: boolean[
 export const listGroups = async (db: D1Database): Promise<Group[]> => {
   const { results } = await db
     .prepare(
-      `SELECT g.id, g.name, g.description, g.kind, COUNT(gw.word_id) AS word_count
-         FROM word_groups g
-         LEFT JOIN group_words gw ON gw.group_id = g.id
-        GROUP BY g.id
-        ORDER BY g.sort_order, g.id`,
+      `SELECT id, name, description, kind, word_count
+         FROM word_groups
+        ORDER BY sort_order, id`,
     )
     .all<Group>();
   return results;
@@ -49,12 +47,7 @@ export const listGroups = async (db: D1Database): Promise<Group[]> => {
 
 export const getGroup = async (db: D1Database, id: number): Promise<Group | null> => {
   return db
-    .prepare(
-      `SELECT g.id, g.name, g.description, g.kind,
-              (SELECT COUNT(*) FROM group_words gw WHERE gw.group_id = g.id) AS word_count
-         FROM word_groups g
-        WHERE g.id = ?`,
-    )
+    .prepare(`SELECT id, name, description, kind, word_count FROM word_groups WHERE id = ?`)
     .bind(id)
     .first<Group>();
 };
@@ -98,6 +91,16 @@ const GroupsJson = `
             WHERE x.word_id = w.id
             ORDER BY g.sort_order, g.id)) AS groups_json`;
 
+const FavoritesGroupId = `(SELECT id FROM word_groups WHERE kind = 'favorites')`;
+
+const GroupFavoriteIds = `
+  SELECT gw.word_id, gw.sort_order
+    FROM group_words f
+    JOIN group_words gw ON gw.group_id = ? AND gw.word_id = f.word_id
+   WHERE f.group_id = ${FavoritesGroupId}`;
+
+const GroupWordIds = `SELECT word_id, sort_order FROM group_words WHERE group_id = ?`;
+
 export const IsFavorite = `EXISTS (SELECT 1 FROM group_words fx JOIN word_groups fg ON fg.id = fx.group_id
            WHERE fg.kind = 'favorites' AND fx.word_id = w.id)`;
 
@@ -135,10 +138,7 @@ export type CardFilter = "all" | "favorites";
 
 export const countGroupFavorites = async (db: D1Database, groupId: number): Promise<number> => {
   const n = await db
-    .prepare(
-      `SELECT COUNT(*) AS n FROM group_words gw JOIN words w ON w.id = gw.word_id
-        WHERE gw.group_id = ? AND ${IsFavorite}`,
-    )
+    .prepare(`SELECT COUNT(*) AS n FROM (${GroupFavoriteIds})`)
     .bind(groupId)
     .first<number>("n");
   return n ?? 0;
@@ -153,11 +153,11 @@ export const getWordAt = async (
   const row = await db
     .prepare(
       `SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults}
-         FROM group_words gw
-         JOIN words w ON w.id = gw.word_id
-        WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${IsFavorite}` : ""}
-        ORDER BY gw.sort_order, w.id
-        LIMIT 1 OFFSET ?`,
+         FROM words w
+        WHERE w.id = (
+          SELECT word_id FROM (${filter === "favorites" ? GroupFavoriteIds : GroupWordIds})
+           ORDER BY sort_order, word_id
+           LIMIT 1 OFFSET ?)`,
     )
     .bind(groupId, index)
     .first<WordWithGroupsRow>();
@@ -172,11 +172,9 @@ export const listGroupWords = async (
   const { results } = await db
     .prepare(
       `SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults}
-         FROM group_words gw
-         JOIN words w ON w.id = gw.word_id
-        WHERE gw.group_id = ?
-        ORDER BY gw.sort_order, w.id
-        LIMIT ? OFFSET ?`,
+         FROM (${GroupWordIds} ORDER BY sort_order, word_id LIMIT ? OFFSET ?) page
+         JOIN words w ON w.id = page.word_id
+        ORDER BY page.sort_order, page.word_id`,
     )
     .bind(groupId, range.limit, range.offset)
     .all<WordWithGroupsRow>();
@@ -190,16 +188,14 @@ export const listAllWords = async (
   const { results } = await db
     .prepare(
       `SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults}
-         FROM words w
-        ORDER BY w.id
-        LIMIT ? OFFSET ?`,
+         FROM (SELECT id FROM words ORDER BY id LIMIT ? OFFSET ?) page
+         JOIN words w ON w.id = page.id
+        ORDER BY w.id`,
     )
     .bind(range.limit, range.offset)
     .all<WordWithGroupsRow>();
   return results.map(toWordWithGroups);
 };
-
-const FavoritesGroupId = `(SELECT id FROM word_groups WHERE kind = 'favorites')`;
 
 export const toggleFavorite = async (db: D1Database, wordId: number): Promise<boolean> => {
   const removed = await db
