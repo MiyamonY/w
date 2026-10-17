@@ -3,6 +3,7 @@ import { formatSourceNumbers } from "../../helper/source-numbers";
 import { Examples } from "../examples";
 import { FavoriteButton } from "../favorite-button";
 import { GroupTags } from "../group-tags";
+import { QuizResults } from "../quiz-results";
 import { SpeakButton } from "../speak-button";
 
 type Props = {
@@ -28,6 +29,7 @@ export const WordTable = (props: Props) => {
           <th class={Head}>意味</th>
           <th class={Head}>例文</th>
           <th class={Head}>グループ</th>
+          <th class={`${Head} w-px`}>4択</th>
         </tr>
       </thead>
       <tbody class="grid gap-3 md:table-row-group">
@@ -64,6 +66,14 @@ export const WordTable = (props: Props) => {
             </td>
             <td class={`${Cell} pt-1.5 md:pt-2.5`}>
               <GroupTags groups={w.groups.filter((g) => g.id !== currentGroupId)} />
+            </td>
+            <td class={`${Cell} pt-1.5 md:pt-2.5`}>
+              {w.quiz_results.length > 0 && (
+                <>
+                  <span class="mr-1.5 text-xs text-neutral-400 md:hidden">4択</span>
+                  <QuizResults results={w.quiz_results} />
+                </>
+              )}
             </td>
           </tr>
         ))}

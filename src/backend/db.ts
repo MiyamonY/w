@@ -32,7 +32,7 @@ export type Word = {
 };
 
 export type GroupRef = { id: number; name: string };
-export type WordWithGroups = Word & { groups: GroupRef[] };
+export type WordWithGroups = Word & { groups: GroupRef[]; quiz_results: boolean[] };
 
 export const listGroups = async (db: D1Database): Promise<Group[]> => {
   const { results } = await db
@@ -82,6 +82,14 @@ const NumbersJson = `
             WHERE sw.word_id = w.id
             ORDER BY s.id)) AS numbers_json`;
 
+const QuizResults = `
+  (SELECT group_concat(correct, '')
+     FROM (SELECT a.correct
+             FROM question_answers a
+             JOIN questions q ON q.id = a.question_id
+            WHERE q.word_id = w.id
+            ORDER BY a.id)) AS quiz_results`;
+
 const GroupsJson = `
   (SELECT json_group_array(json_object('id', id, 'name', name))
      FROM (SELECT g.id, g.name
@@ -104,7 +112,7 @@ type WordRow = Omit<Word, "examples" | "numbers" | "favorite"> & {
   numbers_json: string;
   favorite: number;
 };
-type WordWithGroupsRow = WordRow & { groups_json: string };
+type WordWithGroupsRow = WordRow & { groups_json: string; quiz_results: string | null };
 
 const toWord = ({ examples_json, numbers_json, favorite, ...w }: WordRow): Word => ({
   ...w,
@@ -113,9 +121,14 @@ const toWord = ({ examples_json, numbers_json, favorite, ...w }: WordRow): Word 
   favorite: favorite === 1,
 });
 
-const toWordWithGroups = ({ groups_json, ...row }: WordWithGroupsRow): WordWithGroups => ({
+const toWordWithGroups = ({
+  groups_json,
+  quiz_results,
+  ...row
+}: WordWithGroupsRow): WordWithGroups => ({
   ...toWord(row),
   groups: JSON.parse(groups_json) as GroupRef[],
+  quiz_results: [...(quiz_results ?? "")].map((c) => c === "1"),
 });
 
 export type CardFilter = "all" | "favorites";
@@ -158,7 +171,7 @@ export const listGroupWords = async (
 ): Promise<WordWithGroups[]> => {
   const { results } = await db
     .prepare(
-      `SELECT ${WordColumns}, ${GroupsJson}
+      `SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults}
          FROM group_words gw
          JOIN words w ON w.id = gw.word_id
         WHERE gw.group_id = ?
@@ -176,7 +189,7 @@ export const listAllWords = async (
 ): Promise<WordWithGroups[]> => {
   const { results } = await db
     .prepare(
-      `SELECT ${WordColumns}, ${GroupsJson}
+      `SELECT ${WordColumns}, ${GroupsJson}, ${QuizResults}
          FROM words w
         ORDER BY w.id
         LIMIT ? OFFSET ?`,
