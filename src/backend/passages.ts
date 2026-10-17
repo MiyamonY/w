@@ -38,8 +38,6 @@ export type PassageSummary = {
   id: number;
   title: string;
   created_at: string;
-  word_count: number;
-  revealed_count: number;
 };
 
 export type PassageWord = {
@@ -50,7 +48,6 @@ export type PassageWord = {
   meaning: string;
   audio_key: string | null;
   favorite: boolean;
-  revealed: boolean;
 };
 
 export type Passage = {
@@ -105,13 +102,10 @@ export const createPassage = async (
 export const listPassages = async (db: D1Database, groupId: number): Promise<PassageSummary[]> => {
   const { results } = await db
     .prepare(
-      `SELECT p.id, p.title, p.created_at,
-              COUNT(pw.word_id) AS word_count, COALESCE(SUM(pw.revealed), 0) AS revealed_count
-         FROM passages p
-         LEFT JOIN passage_words pw ON pw.passage_id = p.id
-        WHERE p.group_id = ?
-        GROUP BY p.id
-        ORDER BY p.id DESC
+      `SELECT id, title, created_at
+         FROM passages
+        WHERE group_id = ?
+        ORDER BY id DESC
         LIMIT 50`,
     )
     .bind(groupId)
@@ -119,10 +113,7 @@ export const listPassages = async (db: D1Database, groupId: number): Promise<Pas
   return results;
 };
 
-type PassageWordRow = Omit<PassageWord, "favorite" | "revealed"> & {
-  favorite: number;
-  revealed: number;
-};
+type PassageWordRow = Omit<PassageWord, "favorite"> & { favorite: number };
 
 export const getPassage = async (db: D1Database, id: number): Promise<Passage | null> => {
   const passage = await db
@@ -136,7 +127,7 @@ export const getPassage = async (db: D1Database, id: number): Promise<Passage | 
   if (!passage) return null;
   const { results } = await db
     .prepare(
-      `SELECT w.id, pw.number, w.term, w.ipa, w.meaning, w.audio_key, pw.revealed,
+      `SELECT w.id, pw.number, w.term, w.ipa, w.meaning, w.audio_key,
               ${isFavorite("w.id")} AS favorite
          FROM passage_words pw JOIN words w ON w.id = pw.word_id
         WHERE pw.passage_id = ?
@@ -146,13 +137,6 @@ export const getPassage = async (db: D1Database, id: number): Promise<Passage | 
     .all<PassageWordRow>();
   return {
     ...passage,
-    words: results.map((w) => ({ ...w, favorite: w.favorite === 1, revealed: w.revealed === 1 })),
+    words: results.map((w) => ({ ...w, favorite: w.favorite === 1 })),
   };
-};
-
-export const markRevealed = async (db: D1Database, passageId: number, wordId: number) => {
-  await db
-    .prepare(`UPDATE passage_words SET revealed = 1 WHERE passage_id = ? AND word_id = ?`)
-    .bind(passageId, wordId)
-    .run();
 };

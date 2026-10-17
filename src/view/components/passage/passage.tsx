@@ -32,12 +32,7 @@ export const Passage = (props: Props) => {
             if (!word) return segment.form;
             return (
               <span class="group/word" data-word>
-                <ruby
-                  class="cursor-pointer"
-                  hx-post={`/tests/${passage.id}/words/${word.id}/reveal`}
-                  hx-trigger="click once"
-                  hx-swap="none"
-                >
+                <ruby class="cursor-pointer">
                   <strong class="text-blue-800 underline decoration-dotted underline-offset-4">
                     {segment.form}
                   </strong>

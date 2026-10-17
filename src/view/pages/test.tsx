@@ -28,7 +28,6 @@ export const TestPage = (props: Props) => {
               <span class="font-semibold">{w.term}</span>
               <SpeakButton audioKey={w.audio_key} label="音声を再生" />
               <FavoriteButton wordId={w.id} favorite={w.favorite} />
-              {w.revealed && <span class="ml-auto text-xs text-amber-700">意味を確認</span>}
             </div>
             {w.ipa && <div class="text-sm text-neutral-500">/{w.ipa}/</div>}
             <div class="text-sm">{w.meaning}</div>

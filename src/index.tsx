@@ -18,7 +18,6 @@ import {
   createPassage,
   getPassage,
   listPassages,
-  markRevealed,
   pickTestWords,
   TestRequestSchema,
 } from "./backend/passages";
@@ -235,11 +234,6 @@ app.get("/tests/:id{[0-9]+}", async (c) => {
   const passage = await getPassage(c.env.DB, Number(c.req.param("id")));
   if (!passage) return c.notFound();
   return c.html(<TestPage passage={passage} />);
-});
-
-app.post("/tests/:id{[0-9]+}/words/:wordId{[0-9]+}/reveal", async (c) => {
-  await markRevealed(c.env.DB, Number(c.req.param("id")), Number(c.req.param("wordId")));
-  return c.body(null, 204);
 });
 
 app.get("/settings", async (c) => {

@@ -50,17 +50,9 @@ export const TestListPage = (props: Props) => {
         <ul class="mt-2 grid gap-2">
           {passages.map((p) => (
             <li>
-              <a
-                href={`/tests/${p.id}`}
-                class="flex items-center justify-between gap-3 rounded-xl bg-white p-4 shadow-sm"
-              >
-                <span>
-                  <span class="block font-semibold">{p.title}</span>
-                  <span class="text-xs text-neutral-400">{p.created_at}</span>
-                </span>
-                <span class="shrink-0 text-sm text-neutral-500">
-                  確認 {p.revealed_count} / {p.word_count}
-                </span>
+              <a href={`/tests/${p.id}`} class="block rounded-xl bg-white p-4 shadow-sm">
+                <span class="block font-semibold">{p.title}</span>
+                <span class="text-xs text-neutral-400">{p.created_at}</span>
               </a>
             </li>
           ))}
