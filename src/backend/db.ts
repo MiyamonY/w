@@ -95,18 +95,20 @@ const GroupsJson = `
 
 const FavoritesGroupId = `(SELECT id FROM word_groups WHERE kind = 'favorites')`;
 
+// 件数の少ないお気に入り側から読むよう、CROSS JOIN で結合順を固定する
 const GroupFavoriteIds = `
   SELECT gw.word_id, gw.sort_order
     FROM group_words f
-    JOIN group_words gw ON gw.group_id = ? AND gw.word_id = f.word_id
+   CROSS JOIN group_words gw ON gw.group_id = ? AND gw.word_id = f.word_id
    WHERE f.group_id = ${FavoritesGroupId}`;
 
 const GroupWordIds = `SELECT word_id, sort_order FROM group_words WHERE group_id = ?`;
 
-export const IsFavorite = `EXISTS (SELECT 1 FROM group_words fx JOIN word_groups fg ON fg.id = fx.group_id
-           WHERE fg.kind = 'favorites' AND fx.word_id = w.id)`;
+export const isFavorite = (wordId: string) => `
+  EXISTS (SELECT 1 FROM group_words fx JOIN word_groups fg ON fg.id = fx.group_id
+           WHERE fg.kind = 'favorites' AND fx.word_id = ${wordId})`;
 
-const FavoriteColumn = `${IsFavorite} AS favorite`;
+const FavoriteColumn = `${isFavorite("w.id")} AS favorite`;
 
 const ImageKey = `(SELECT wi.image_key FROM word_images wi WHERE wi.word_id = w.id AND wi.status = 'done') AS image_key`;
 

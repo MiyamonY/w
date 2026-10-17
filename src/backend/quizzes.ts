@@ -1,6 +1,6 @@
 import { shuffle } from "remeda";
 import { z } from "zod/mini";
-import { type CardFilter, IsFavorite } from "./db";
+import { type CardFilter, isFavorite } from "./db";
 import { CardFilterSchema, coercedInt, coercedLiteral } from "./paging";
 
 export const QuizQuestionCounts = [10, 20, 30, 50] as const;
@@ -68,7 +68,7 @@ const QuestionColumns = `q.id, q.sentence, q.choices, q.answer, q.choice_meaning
        q.translation, q.explanation, w.id AS word_id, w.term, w.meaning, w.audio_key,
        (SELECT COUNT(*) FROM question_answers a WHERE a.question_id = q.id) AS attempts,
        (SELECT COUNT(*) FROM question_answers a WHERE a.question_id = q.id AND a.correct = 1) AS corrects,
-       ${IsFavorite} AS favorite`;
+       ${isFavorite("w.id")} AS favorite`;
 
 const toQuestion = (
   { attempts, corrects, favorite, ...row }: QuestionRow,
@@ -109,11 +109,10 @@ export const pickQuestionIds = async (
     .prepare(
       `SELECT q.id
          FROM group_words gw
-         JOIN words w ON w.id = gw.word_id
-         JOIN questions q ON q.word_id = w.id
+         JOIN questions q ON q.word_id = gw.word_id
          LEFT JOIN question_answers latest ON latest.id =
               (SELECT MAX(a.id) FROM question_answers a WHERE a.question_id = q.id)
-        WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${IsFavorite}` : ""}
+        WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${isFavorite("gw.word_id")}` : ""}
         ORDER BY COALESCE(latest.correct, 0), RANDOM()
         LIMIT ?`,
     )

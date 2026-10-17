@@ -1,5 +1,5 @@
 import { z } from "zod/mini";
-import { type CardFilter, IsFavorite } from "./db";
+import { type CardFilter, isFavorite } from "./db";
 import { CardFilterSchema, coercedLiteral } from "./paging";
 
 const Marker = /\{\{(\d+)\|([^{}]+)\}\}/g;
@@ -74,7 +74,7 @@ export const pickTestWords = async (
       `SELECT w.id, w.term, w.meaning
          FROM group_words gw
          JOIN words w ON w.id = gw.word_id
-        WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${IsFavorite}` : ""}
+        WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${isFavorite("w.id")}` : ""}
         ORDER BY RANDOM()
         LIMIT ?`,
     )
@@ -137,7 +137,7 @@ export const getPassage = async (db: D1Database, id: number): Promise<Passage | 
   const { results } = await db
     .prepare(
       `SELECT w.id, pw.number, w.term, w.ipa, w.meaning, w.audio_key, pw.revealed,
-              ${IsFavorite} AS favorite
+              ${isFavorite("w.id")} AS favorite
          FROM passage_words pw JOIN words w ON w.id = pw.word_id
         WHERE pw.passage_id = ?
         ORDER BY pw.number`,
