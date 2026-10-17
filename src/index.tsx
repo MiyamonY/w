@@ -25,7 +25,6 @@ import {
 import {
   AnswerSchema,
   answerQuestion,
-  getGroupQuizStats,
   getQuestions,
   pickQuestionIds,
   QuestionIdsSchema,
@@ -152,11 +151,8 @@ app.get("/groups/:id{[0-9]+}/tests", async (c) => {
   const id = Number(c.req.param("id"));
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
-  const [passages, quizStats] = await Promise.all([
-    listPassages(c.env.DB, id),
-    getGroupQuizStats(c.env.DB, id),
-  ]);
-  return c.html(<TestListPage group={group} passages={passages} quizStats={quizStats} />);
+  const passages = await listPassages(c.env.DB, id);
+  return c.html(<TestListPage group={group} passages={passages} />);
 });
 
 app.post("/groups/:id{[0-9]+}/quizzes", async (c) => {
@@ -166,11 +162,10 @@ app.post("/groups/:id{[0-9]+}/quizzes", async (c) => {
   const { count, only } = QuizRequestSchema.parse(await c.req.parseBody());
   const ids = await pickQuestionIds(c.env.DB, id, count, only);
   if (ids.length === 0) {
-    const stats = await getGroupQuizStats(c.env.DB, id);
     return c.html(
       <QuizForm
         groupId={id}
-        questionCount={stats.questions}
+        questionCount={group.question_count}
         favoritesCount={group.favorite_count}
         error="出題できる問題がありません。"
       />,

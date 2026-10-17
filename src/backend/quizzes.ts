@@ -51,8 +51,6 @@ export type QuizQuestion = {
   favorite: boolean;
 };
 
-export type GroupQuizStats = { questions: number; answered: number; latest_correct: number };
-
 type QuestionRow = Omit<
   QuizQuestion,
   "number" | "choices" | "choice_meanings" | "chosen" | "history" | "favorite"
@@ -66,8 +64,7 @@ type QuestionRow = Omit<
 
 const QuestionColumns = `q.id, q.sentence, q.choices, q.answer, q.choice_meanings,
        q.translation, q.explanation, w.id AS word_id, w.term, w.meaning, w.audio_key,
-       (SELECT COUNT(*) FROM question_answers a WHERE a.question_id = q.id) AS attempts,
-       (SELECT COUNT(*) FROM question_answers a WHERE a.question_id = q.id AND a.correct = 1) AS corrects,
+       q.attempts, q.corrects,
        ${isFavorite("w.id")} AS favorite`;
 
 const toQuestion = (
@@ -84,21 +81,6 @@ const toQuestion = (
   favorite: favorite === 1,
 });
 
-export const getGroupQuizStats = async (db: D1Database, groupId: number) =>
-  (await db
-    .prepare(
-      `SELECT COUNT(*) AS questions,
-              COUNT(latest.correct) AS answered,
-              COALESCE(SUM(latest.correct), 0) AS latest_correct
-         FROM group_words gw
-         JOIN questions q ON q.word_id = gw.word_id
-         LEFT JOIN question_answers latest ON latest.id =
-              (SELECT MAX(a.id) FROM question_answers a WHERE a.question_id = q.id)
-        WHERE gw.group_id = ?`,
-    )
-    .bind(groupId)
-    .first<GroupQuizStats>()) ?? { questions: 0, answered: 0, latest_correct: 0 };
-
 export const pickQuestionIds = async (
   db: D1Database,
   groupId: number,
@@ -110,10 +92,8 @@ export const pickQuestionIds = async (
       `SELECT q.id
          FROM group_words gw
          JOIN questions q ON q.word_id = gw.word_id
-         LEFT JOIN question_answers latest ON latest.id =
-              (SELECT MAX(a.id) FROM question_answers a WHERE a.question_id = q.id)
         WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${isFavorite("gw.word_id")}` : ""}
-        ORDER BY COALESCE(latest.correct, 0), RANDOM()
+        ORDER BY COALESCE(q.latest_correct, 0), RANDOM()
         LIMIT ?`,
     )
     .bind(groupId, count)

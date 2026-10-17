@@ -1,6 +1,5 @@
 import type { Group } from "../../backend/db";
 import type { PassageSummary } from "../../backend/passages";
-import type { GroupQuizStats } from "../../backend/quizzes";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
 import { QuizForm } from "../components/quiz-form";
@@ -11,11 +10,10 @@ import { startDialogData } from "../helper/start-dialog-data";
 type Props = {
   group: Group;
   passages: PassageSummary[];
-  quizStats: GroupQuizStats;
 };
 
 export const TestListPage = (props: Props) => {
-  const { group, passages, quizStats } = props;
+  const { group, passages } = props;
   return (
     <Layout title={`${group.name} のテスト - 単語帳`}>
       <PageHeader
@@ -31,13 +29,13 @@ export const TestListPage = (props: Props) => {
       <p class="mt-2 text-sm text-neutral-500">英検1級の大問1形式で、空所に入る語を選びます。</p>
       <QuizForm
         groupId={group.id}
-        questionCount={quizStats.questions}
+        questionCount={group.question_count}
         favoritesCount={group.favorite_count}
       />
-      {quizStats.answered > 0 && (
+      {group.answered_count > 0 && (
         <p class="mt-3 text-sm text-neutral-500">
-          解いた問題 {quizStats.answered} / {quizStats.questions} 問（直近の解答で正解{" "}
-          {quizStats.latest_correct} 問）
+          解いた問題 {group.answered_count} / {group.question_count} 問（直近の解答で正解{" "}
+          {group.latest_correct_count} 問）
         </p>
       )}
       <h2 class="mt-8 font-semibold">英文テスト</h2>
