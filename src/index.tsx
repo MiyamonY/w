@@ -11,6 +11,11 @@ import {
   listGroupWords,
   toggleFavorite,
 } from "./backend/db";
+import {
+  answerMeaningQuestion,
+  getMeaningQuestions,
+  pickMeaningQuestionIds,
+} from "./backend/meaning-quizzes";
 import { serveObject } from "./backend/storage";
 import { requireAccess } from "./backend/auth";
 import { generatePassage, PassageError } from "./backend/openai";
@@ -39,12 +44,15 @@ import { getSettings, SettingsSchema, updateSettings } from "./backend/settings"
 import { Card } from "./view/components/card";
 import { FavoriteButton, FavoriteButtonVariants } from "./view/components/favorite-button";
 import { TestForm } from "./view/components/test-form";
+import { MeaningQuizForm } from "./view/components/meaning-quiz-form";
+import { MeaningQuizQuestion } from "./view/components/meaning-quiz-question";
 import { QuizForm } from "./view/components/quiz-form";
 import { QuizQuestion } from "./view/components/quiz-question";
 import { PagedWordTable } from "./view/components/paged-word-table";
 import { SettingsForm } from "./view/components/settings-form";
 import { AllWordList } from "./view/pages/all-word-list";
 import { GroupList } from "./view/pages/group-list";
+import { MeaningQuizPage } from "./view/pages/meaning-quiz";
 import { Player } from "./view/pages/player";
 import { QuizPage } from "./view/pages/quiz";
 import { SettingsPage } from "./view/pages/settings";
@@ -200,6 +208,54 @@ app.post("/questions/:id{[0-9]+}/answer", async (c) => {
   );
   if (!question) return c.notFound();
   return c.html(<QuizQuestion question={question} />);
+});
+
+app.post("/groups/:id{[0-9]+}/meaning-quizzes", async (c) => {
+  const id = Number(c.req.param("id"));
+  const group = await getGroup(c.env.DB, id);
+  if (!group) return c.notFound();
+  const { count, only } = QuizRequestSchema.parse(await c.req.parseBody());
+  const ids = await pickMeaningQuestionIds(c.env.DB, id, count, only);
+  if (ids.length === 0) {
+    return c.html(
+      <MeaningQuizForm
+        groupId={id}
+        questionCount={group.question_count}
+        favoritesCount={group.favorite_count}
+        error="出題できる問題がありません。"
+      />,
+      422,
+    );
+  }
+  const url = `/groups/${id}/meaning-quiz?q=${ids.join(",")}`;
+  if (c.req.header("hx-request") === "true") {
+    c.header("HX-Redirect", url);
+    return c.body(null, 200);
+  }
+  return c.redirect(url, 303);
+});
+
+app.get("/groups/:id{[0-9]+}/meaning-quiz", async (c) => {
+  const id = Number(c.req.param("id"));
+  const group = await getGroup(c.env.DB, id);
+  if (!group) return c.notFound();
+  const ids = QuestionIdsSchema.parse(c.req.query("q")).slice(0, 50);
+  const questions = await getMeaningQuestions(c.env.DB, ids);
+  if (questions.length === 0) return c.redirect(`/groups/${id}/tests`);
+  return c.html(<MeaningQuizPage group={group} questions={questions} />);
+});
+
+app.post("/questions/:id{[0-9]+}/meaning-answer", async (c) => {
+  const input = AnswerSchema.safeParse(await c.req.parseBody());
+  if (!input.success) return c.body(null, 400);
+  const question = await answerMeaningQuestion(
+    c.env.DB,
+    Number(c.req.param("id")),
+    input.data.number,
+    input.data.choice,
+  );
+  if (!question) return c.notFound();
+  return c.html(<MeaningQuizQuestion question={question} />);
 });
 
 app.post("/groups/:id{[0-9]+}/tests", async (c) => {

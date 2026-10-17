@@ -1,7 +1,7 @@
 import { z } from "zod/mini";
 import { clamp } from "remeda";
 
-export const PerPageOptions = [10, 50, 100, 500] as const;
+export const PerPageOptions = [10, 25, 50] as const;
 export const DefaultPerPage = 50;
 
 export type Paging = {

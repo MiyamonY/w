@@ -1,6 +1,7 @@
 import type { Group } from "../../backend/db";
 import type { PassageSummary } from "../../backend/passages";
 import { Layout } from "../components/layout";
+import { MeaningQuizForm } from "../components/meaning-quiz-form";
 import { PageHeader } from "../components/page-header";
 import { QuizForm } from "../components/quiz-form";
 import { StartDialog } from "../components/start-dialog";
@@ -32,12 +33,13 @@ export const TestListPage = (props: Props) => {
         questionCount={group.question_count}
         favoritesCount={group.favorite_count}
       />
-      {group.answered_count > 0 && (
-        <p class="mt-3 text-sm text-neutral-500">
-          解いた問題 {group.answered_count} / {group.question_count} 問（直近の解答で正解{" "}
-          {group.latest_correct_count} 問）
-        </p>
-      )}
+      <h2 class="mt-8 font-semibold">意味の4択</h2>
+      <p class="mt-2 text-sm text-neutral-500">英単語を見て、日本語の意味を4つから選びます。</p>
+      <MeaningQuizForm
+        groupId={group.id}
+        questionCount={group.question_count}
+        favoritesCount={group.favorite_count}
+      />
       <h2 class="mt-8 font-semibold">英文テスト</h2>
       <p class="mt-2 text-sm text-neutral-500">
         グループの単語を使った約300語の英文を作ります。太字の単語の意味がわかるか確かめてください。

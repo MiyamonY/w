@@ -5,8 +5,6 @@ export type Group = {
   word_count: number;
   favorite_count: number;
   question_count: number;
-  answered_count: number;
-  latest_correct_count: number;
   kind: "normal" | "favorites";
 };
 
@@ -39,7 +37,7 @@ export type GroupRef = { id: number; name: string };
 export type WordWithGroups = Word & { groups: GroupRef[] };
 
 const GroupColumns = `id, name, description, kind, word_count, favorite_count,
-       question_count, answered_count, latest_correct_count`;
+       question_count`;
 
 export const listGroups = async (db: D1Database): Promise<Group[]> => {
   const { results } = await db

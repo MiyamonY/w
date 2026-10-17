@@ -29,11 +29,11 @@ export const QuestionIdsSchema = z.catch(
   [],
 );
 
-const StringsSchema = z.array(z.string());
+export const StringsSchema = z.array(z.string());
 
 export type QuestionHistory = { attempts: number; corrects: number; recent: boolean[] };
 
-const RecentResultCount = 10;
+export const RecentResultCount = 10;
 
 export type QuizQuestion = {
   id: number;
