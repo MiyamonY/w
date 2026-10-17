@@ -2,7 +2,6 @@ import { type Context, Hono } from "hono";
 import { csrf } from "hono/csrf";
 import { z } from "zod/mini";
 import {
-  countGroupFavorites,
   countWords,
   getGroup,
   getWord,
@@ -35,8 +34,8 @@ import {
 import {
   CardQuerySchema,
   GroupFilterSchema,
+  PlayerQuerySchema,
   resolvePaging,
-  StartIndexSchema,
 } from "./backend/paging";
 import { getSettings, SettingsSchema, updateSettings } from "./backend/settings";
 import { Card } from "./view/components/card";
@@ -91,28 +90,26 @@ app.get("/words", async (c) => {
 });
 
 app.get("/groups/:id{[0-9]+}", async (c) => {
+  const query = PlayerQuerySchema.safeParse(c.req.query());
+  if (!query.success) return c.text("Bad Request", 400);
+  const { start: requested, only } = query.data;
   const id = Number(c.req.param("id"));
-  const group = await getGroup(c.env.DB, id);
-  if (!group) return c.notFound();
-  const [allIds, favoriteIds, settings] = await Promise.all([
-    listCardWordIds(c.env.DB, id, "all"),
-    listCardWordIds(c.env.DB, id, "favorites"),
+  const [group, wordIds, settings] = await Promise.all([
+    getGroup(c.env.DB, id),
+    listCardWordIds(c.env.DB, id, only),
     getSettings(c.env.DB),
   ]);
-  const requested = StartIndexSchema.parse(c.req.query("start"));
-  const start = allIds.length > 0 ? requested % allIds.length : 0;
-  const first = allIds.length > 0 ? await getWord(c.env.DB, allIds[start]) : null;
-  const showStartDialog = c.req.query("start") === undefined;
+  if (!group) return c.notFound();
+  const start = wordIds.length > 0 ? requested % wordIds.length : 0;
+  const first = wordIds.length > 0 ? await getWord(c.env.DB, wordIds[start]) : null;
   return c.html(
     <Player
       group={group}
       start={start}
       first={first}
       settings={settings}
-      wordIds={{ all: allIds, favorites: favoriteIds }}
-      favoritesCount={
-        !showStartDialog ? undefined : group.kind === "favorites" ? 0 : favoriteIds.length
-      }
+      wordIds={wordIds}
+      filter={only}
     />,
   );
 });
@@ -155,19 +152,11 @@ app.get("/groups/:id{[0-9]+}/tests", async (c) => {
   const id = Number(c.req.param("id"));
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
-  const [favoritesCount, passages, quizStats] = await Promise.all([
-    group.kind === "favorites" ? 0 : countGroupFavorites(c.env.DB, id),
+  const [passages, quizStats] = await Promise.all([
     listPassages(c.env.DB, id),
     getGroupQuizStats(c.env.DB, id),
   ]);
-  return c.html(
-    <TestListPage
-      group={group}
-      favoritesCount={favoritesCount}
-      passages={passages}
-      quizStats={quizStats}
-    />,
-  );
+  return c.html(<TestListPage group={group} passages={passages} quizStats={quizStats} />);
 });
 
 app.post("/groups/:id{[0-9]+}/quizzes", async (c) => {
@@ -177,15 +166,12 @@ app.post("/groups/:id{[0-9]+}/quizzes", async (c) => {
   const { count, only } = QuizRequestSchema.parse(await c.req.parseBody());
   const ids = await pickQuestionIds(c.env.DB, id, count, only);
   if (ids.length === 0) {
-    const [favoritesCount, stats] = await Promise.all([
-      group.kind === "favorites" ? 0 : countGroupFavorites(c.env.DB, id),
-      getGroupQuizStats(c.env.DB, id),
-    ]);
+    const stats = await getGroupQuizStats(c.env.DB, id);
     return c.html(
       <QuizForm
         groupId={id}
         questionCount={stats.questions}
-        favoritesCount={favoritesCount}
+        favoritesCount={group.favorite_count}
         error="出題できる問題がありません。"
       />,
       422,
@@ -226,9 +212,8 @@ app.post("/groups/:id{[0-9]+}/tests", async (c) => {
   const id = Number(c.req.param("id"));
   const group = await getGroup(c.env.DB, id);
   if (!group) return c.notFound();
-  const favoritesCount = group.kind === "favorites" ? 0 : await countGroupFavorites(c.env.DB, id);
   const fail = (error: string) =>
-    c.html(<TestForm groupId={id} favoritesCount={favoritesCount} error={error} />, 422);
+    c.html(<TestForm groupId={id} favoritesCount={group.favorite_count} error={error} />, 422);
 
   const { count, only } = TestRequestSchema.parse(await c.req.parseBody());
   const words = await pickTestWords(c.env.DB, id, count, only);

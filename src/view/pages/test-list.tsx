@@ -4,30 +4,35 @@ import type { GroupQuizStats } from "../../backend/quizzes";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
 import { QuizForm } from "../components/quiz-form";
+import { StartDialog } from "../components/start-dialog";
 import { TestForm } from "../components/test-form";
+import { startDialogData } from "../helper/start-dialog-data";
 
 type Props = {
   group: Group;
-  favoritesCount: number;
   passages: PassageSummary[];
   quizStats: GroupQuizStats;
 };
 
 export const TestListPage = (props: Props) => {
-  const { group, favoritesCount, passages, quizStats } = props;
+  const { group, passages, quizStats } = props;
   return (
     <Layout title={`${group.name} のテスト - 単語帳`}>
       <PageHeader
         title={`${group.name} のテスト`}
         backHref="/"
-        link={{ href: `/groups/${group.id}`, label: "カードで見る" }}
+        link={{
+          href: `/groups/${group.id}?start=0`,
+          label: "カードで見る",
+          data: startDialogData(group),
+        }}
       />
       <h2 class="mt-6 font-semibold">4択問題</h2>
       <p class="mt-2 text-sm text-neutral-500">英検1級の大問1形式で、空所に入る語を選びます。</p>
       <QuizForm
         groupId={group.id}
         questionCount={quizStats.questions}
-        favoritesCount={favoritesCount}
+        favoritesCount={group.favorite_count}
       />
       {quizStats.answered > 0 && (
         <p class="mt-3 text-sm text-neutral-500">
@@ -39,7 +44,7 @@ export const TestListPage = (props: Props) => {
       <p class="mt-2 text-sm text-neutral-500">
         グループの単語を使った約300語の英文を作ります。太字の単語の意味がわかるか確かめてください。
       </p>
-      <TestForm groupId={group.id} favoritesCount={favoritesCount} />
+      <TestForm groupId={group.id} favoritesCount={group.favorite_count} />
       <h2 class="mt-6 text-neutral-500">これまでのテスト</h2>
       {passages.length === 0 ? (
         <p class="mt-2 text-sm text-neutral-500">まだありません。</p>
@@ -63,6 +68,7 @@ export const TestListPage = (props: Props) => {
           ))}
         </ul>
       )}
+      <StartDialog />
     </Layout>
   );
 };

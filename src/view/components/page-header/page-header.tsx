@@ -1,7 +1,7 @@
 type Props = {
   title: string;
   backHref?: string;
-  link?: { href: string; label: string };
+  link?: { href: string; label: string; data?: Record<string, string> };
 };
 
 export const PageHeader = (props: Props) => {
@@ -15,7 +15,7 @@ export const PageHeader = (props: Props) => {
       )}
       <h1 class="text-xl font-bold">{title}</h1>
       {link && (
-        <a href={link.href} class="ml-auto text-sm text-blue-700">
+        <a href={link.href} class="ml-auto text-sm text-blue-700" {...link.data}>
           {link.label}
         </a>
       )}

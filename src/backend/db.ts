@@ -3,6 +3,7 @@ export type Group = {
   name: string;
   description: string | null;
   word_count: number;
+  favorite_count: number;
   kind: "normal" | "favorites";
 };
 
@@ -34,10 +35,12 @@ export type Word = {
 export type GroupRef = { id: number; name: string };
 export type WordWithGroups = Word & { groups: GroupRef[]; quiz_results: boolean[] };
 
+const GroupColumns = `id, name, description, kind, word_count, favorite_count`;
+
 export const listGroups = async (db: D1Database): Promise<Group[]> => {
   const { results } = await db
     .prepare(
-      `SELECT id, name, description, kind, word_count
+      `SELECT ${GroupColumns}
          FROM word_groups
         ORDER BY sort_order, id`,
     )
@@ -46,10 +49,7 @@ export const listGroups = async (db: D1Database): Promise<Group[]> => {
 };
 
 export const getGroup = async (db: D1Database, id: number): Promise<Group | null> => {
-  return db
-    .prepare(`SELECT id, name, description, kind, word_count FROM word_groups WHERE id = ?`)
-    .bind(id)
-    .first<Group>();
+  return db.prepare(`SELECT ${GroupColumns} FROM word_groups WHERE id = ?`).bind(id).first<Group>();
 };
 
 export const countWords = async (db: D1Database): Promise<number> => {
@@ -139,14 +139,6 @@ const toWordWithGroups = ({
 });
 
 export type CardFilter = "all" | "favorites";
-
-export const countGroupFavorites = async (db: D1Database, groupId: number): Promise<number> => {
-  const n = await db
-    .prepare(`SELECT COUNT(*) AS n FROM (${GroupFavoriteIds})`)
-    .bind(groupId)
-    .first<number>("n");
-  return n ?? 0;
-};
 
 export const listCardWordIds = async (
   db: D1Database,

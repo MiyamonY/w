@@ -1,29 +1,23 @@
-import type { Group, WordWithGroups } from "../../../backend/db";
+import type { CardFilter, Group, WordWithGroups } from "../../../backend/db";
 import type { Settings } from "../../../backend/settings";
 import { DefaultPlaybackRate, formatPlaybackRate, PlaybackRates } from "../../helper/playback-rate";
 import { Card } from "../card";
 import { CardPosition } from "../card-position";
-import { StartDialog } from "../start-dialog";
 
 type Props = {
   group: Group;
   start: number;
   first: WordWithGroups | null;
   settings: Settings;
-  wordIds: WordIds;
-  favoritesCount?: number;
+  wordIds: number[];
+  filter: CardFilter;
 };
 
-export type WordIds = { all: number[]; favorites: number[] };
-
 export const Deck = (props: Props) => {
-  const { group, start, first, settings, wordIds, favoritesCount } = props;
+  const { group, start, first, settings, wordIds, filter } = props;
   if (!first) return <p class="text-sm text-neutral-500">単語がありません。</p>;
   return (
     <>
-      {favoritesCount !== undefined && (
-        <StartDialog allCount={wordIds.all.length} favoritesCount={favoritesCount} />
-      )}
       <div
         id="deck"
         data-group-id={String(group.id)}
@@ -38,12 +32,13 @@ export const Deck = (props: Props) => {
         <Card
           groupId={group.id}
           index={start}
-          total={wordIds.all.length}
+          total={wordIds.length}
+          filter={filter}
           word={first}
           showExamplesOnFront={settings.show_examples_on_front}
         />
       </div>
-      <CardPosition position={start + 1} total={wordIds.all.length} />
+      <CardPosition position={start + 1} total={wordIds.length} />
       <div class="flex flex-wrap items-center justify-center gap-4">
         <button
           id="toggle-play"

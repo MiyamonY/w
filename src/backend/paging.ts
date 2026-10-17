@@ -31,7 +31,10 @@ export const CardQuerySchema = z.object({
   only: CardFilterSchema,
 });
 
-export const StartIndexSchema = z.catch(coercedInt(0), 0);
+export const PlayerQuerySchema = z.object({
+  start: z.pipe(z.string().check(z.regex(/^[0-9]+$/)), z.transform(Number)),
+  only: CardFilterSchema,
+});
 
 export const GroupFilterSchema = z.catch(z.optional(coercedInt(1)), undefined);
 

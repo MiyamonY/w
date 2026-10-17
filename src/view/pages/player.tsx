@@ -1,6 +1,6 @@
-import type { Group, WordWithGroups } from "../../backend/db";
+import type { CardFilter, Group, WordWithGroups } from "../../backend/db";
 import type { Settings } from "../../backend/settings";
-import { Deck, type WordIds } from "../components/deck";
+import { Deck } from "../components/deck";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
 import { wordsUrl } from "../helper/words-url";
@@ -10,12 +10,12 @@ type Props = {
   start: number;
   first: WordWithGroups | null;
   settings: Settings;
-  wordIds: WordIds;
-  favoritesCount?: number;
+  wordIds: number[];
+  filter: CardFilter;
 };
 
 export const Player = (props: Props) => {
-  const { group, start, first, settings, wordIds, favoritesCount } = props;
+  const { group, start, first, settings, wordIds, filter } = props;
   return (
     <Layout title={`${group.name} - 単語帳`}>
       <PageHeader
@@ -29,7 +29,7 @@ export const Player = (props: Props) => {
         first={first}
         settings={settings}
         wordIds={wordIds}
-        favoritesCount={favoritesCount}
+        filter={filter}
       />
     </Layout>
   );

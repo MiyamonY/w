@@ -1,6 +1,8 @@
 import type { Group } from "../../backend/db";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
+import { StartDialog } from "../components/start-dialog";
+import { startDialogData } from "../helper/start-dialog-data";
 import { wordsUrl } from "../helper/words-url";
 
 type Props = {
@@ -28,7 +30,8 @@ export const GroupList = (props: Props) => {
           {groups.map((g) => (
             <li class="relative">
               <a
-                href={`/groups/${g.id}`}
+                href={`/groups/${g.id}?start=0`}
+                {...startDialogData(g)}
                 class="grid grid-cols-[1fr_auto] gap-1 rounded-xl bg-white p-4 pr-28 shadow-sm"
               >
                 <span class="text-lg font-semibold">
@@ -48,6 +51,7 @@ export const GroupList = (props: Props) => {
           ))}
         </ul>
       )}
+      <StartDialog />
     </Layout>
   );
 };

@@ -1,28 +1,13 @@
 import type { CardFilter } from "../../../backend/db";
 import { PlayOrderLabels, PlayOrders } from "../../helper/play-order";
 
-type Props = {
-  allCount: number;
-  favoritesCount: number;
-};
-
 const StartButton = "cursor-pointer rounded-lg px-3 py-2 text-sm shadow-sm";
 
-const choiceRow = (props: {
-  filter: CardFilter;
-  label: string;
-  total: number;
-  tone: string;
-  button: string;
-}) => (
-  <section
-    data-filter={props.filter}
-    data-total={String(props.total)}
-    class={`rounded-xl p-3 ${props.tone}`}
-  >
+const choiceRow = (props: { filter: CardFilter; label: string; tone: string; button: string }) => (
+  <section data-filter={props.filter} class={`rounded-xl p-3 ${props.tone}`}>
     <div class="flex items-center justify-between">
       <span class="font-semibold">{props.label}</span>
-      <span class="text-sm opacity-80">{props.total} 語</span>
+      <span data-count class="text-sm opacity-80" />
     </div>
     <div class="mt-2 grid grid-cols-2 gap-2">
       <button type="button" data-start="first" class={`${StartButton} ${props.button}`}>
@@ -35,8 +20,7 @@ const choiceRow = (props: {
   </section>
 );
 
-export const StartDialog = (props: Props) => {
-  const { allCount, favoritesCount } = props;
+export const StartDialog = () => {
   return (
     <dialog
       id="start-dialog"
@@ -64,24 +48,16 @@ export const StartDialog = (props: Props) => {
         {choiceRow({
           filter: "all",
           label: "すべての単語",
-          total: allCount,
           tone: "bg-blue-50 text-blue-900",
           button: "bg-blue-700 text-white",
         })}
-        {favoritesCount > 0 &&
-          choiceRow({
-            filter: "favorites",
-            label: "★ お気に入りのみ",
-            total: favoritesCount,
-            tone: "bg-amber-50 text-amber-900",
-            button: "bg-amber-500 text-white",
-          })}
+        {choiceRow({
+          filter: "favorites",
+          label: "★ お気に入りのみ",
+          tone: "bg-amber-50 text-amber-900",
+          button: "bg-amber-500 text-white",
+        })}
       </div>
-      <form method="dialog" class="mt-4 text-right">
-        <button type="submit" class="cursor-pointer text-sm text-neutral-500">
-          あとで選ぶ
-        </button>
-      </form>
     </dialog>
   );
 };

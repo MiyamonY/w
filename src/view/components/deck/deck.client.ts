@@ -7,13 +7,13 @@ import {
 } from "../../helper/audio-player.client";
 import { formatPlaybackRate, parsePlaybackRate } from "../../helper/playback-rate";
 import {
-  type PlayOrder,
-  PlayOrderLabels,
-  PlayOrders,
-  parsePlayOrder,
-} from "../../helper/play-order";
-import { clamp, range, reverse, shuffle } from "remeda";
-import { z } from "zod/mini";
+  buildSequence,
+  PlayOrderStorageKey,
+  loadProgress,
+  storeProgress,
+} from "../../helper/card-progress.client";
+import { parsePlayOrder } from "../../helper/play-order";
+import { clamp, range, shuffle } from "remeda";
 
 type Dir = "prev" | "next";
 
@@ -52,8 +52,6 @@ const keepScreenOn = async (on: boolean) => {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const PlayOrderStorageKey = "playDirection";
-
 const preloaded: HTMLAudioElement[] = [];
 const preloadAudio = (src: string) => {
   if (preloaded.some((audio) => audio.src.endsWith(src))) return;
@@ -76,44 +74,13 @@ const preloadCard = async (url: string) => {
   }
 };
 
-const buildSequence = (order: PlayOrder, total: number) =>
-  order === "reverse"
-    ? reverse(range(0, total))
-    : order === "random"
-      ? shuffle(range(0, total))
-      : range(0, total);
-
-const ProgressSchema = z.object({
-  order: z.enum(PlayOrders),
-  step: z.int().check(z.positive()),
-  sequence: z.array(z.int().check(z.nonnegative())),
-});
-type Progress = z.infer<typeof ProgressSchema>;
-
-const parseProgress = (value: string | null, total: number): Progress | null => {
-  try {
-    const result = ProgressSchema.safeParse(JSON.parse(value ?? ""));
-    if (!result.success) return null;
-    const { step, sequence } = result.data;
-    return step < total && sequence.length === total && sequence.every((i) => i < total)
-      ? result.data
-      : null;
-  } catch {
-    return null;
-  }
-};
-
 const setupDeck = (deck: HTMLElement) => {
-  const wordIds: Record<Filter, number[]> = {
-    all: [],
-    favorites: [],
-    ...JSON.parse(deck.dataset.wordIds ?? "{}"),
-  };
+  const groupId = deck.dataset.groupId ?? "";
+  const wordIds: number[] = JSON.parse(deck.dataset.wordIds ?? "[]");
   const cardUrl = (filter: Filter, index: number) => {
-    const ids = wordIds[filter];
-    const params = new URLSearchParams({ index: String(index), total: String(ids.length) });
+    const params = new URLSearchParams({ index: String(index), total: String(wordIds.length) });
     if (filter === "favorites") params.set("only", "favorites");
-    return `/groups/${deck.dataset.groupId}/cards/${ids[index]}?${params}`;
+    return `/groups/${groupId}/cards/${wordIds[index]}?${params}`;
   };
   const frontMs = Number(deck.dataset.frontMs);
   const backMs = Number(deck.dataset.backMs);
@@ -208,74 +175,21 @@ const setupDeck = (deck: HTMLElement) => {
 
   toggleBtn?.addEventListener("click", () => setPlaying(!playing));
 
-  const progressKey = (filter: string) => `card-progress:${deck.dataset.groupId}:${filter}`;
   const saveProgress = () => {
     const c = card();
-    if (!c) return;
-    const progress: Progress = { order, step, sequence };
-    localStorage.setItem(progressKey(currentFilter(c)), JSON.stringify(progress));
+    if (c) storeProgress(groupId, currentFilter(c), { order, step, sequence });
   };
-  const savedProgress = (filter: string, total: number) =>
-    parseProgress(localStorage.getItem(progressKey(filter)), total);
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") keepScreenOn(playing);
   });
 
-  const dialog = document.getElementById("start-dialog") as HTMLDialogElement | null;
-  if (dialog) {
-    const rows = [...dialog.querySelectorAll<HTMLElement>("section[data-filter]")];
-    for (const row of rows) {
-      const total = Number(row.dataset.total);
-      const progress = savedProgress(row.dataset.filter ?? "all", total);
-      const resume = row.querySelector<HTMLButtonElement>('[data-start="resume"]');
-      if (!progress || !resume) continue;
-      resume.hidden = false;
-      resume.textContent = `続きから（${PlayOrderLabels[progress.order]} ${progress.step + 1} / ${total}）`;
+  const initial = card();
+  if (initial) {
+    const saved = loadProgress(groupId, currentFilter(initial), Number(initial.dataset.total));
+    if (saved && saved.sequence[saved.step] === Number(initial.dataset.index)) {
+      ({ order, step, sequence } = saved);
     }
-    const orderInput = dialog.querySelector<HTMLInputElement>(
-      `input[name="play-order"][value="${order}"]`,
-    );
-    if (orderInput) orderInput.checked = true;
-    dialog.showModal();
-
-    dialog.addEventListener("click", (e) => {
-      const button = closest(e.target, "[data-start]");
-      const row = closest(e.target, "section[data-filter]");
-      if (!button || !row) return;
-      const filter = toFilter(row.dataset.filter);
-      dialog.close();
-      const total = Number(row.dataset.total);
-      const progress =
-        button.dataset.start === "resume"
-          ? savedProgress(row.dataset.filter ?? "all", total)
-          : null;
-      if (progress) {
-        ({ order, step, sequence } = progress);
-      } else {
-        order = parsePlayOrder(
-          dialog.querySelector<HTMLInputElement>('input[name="play-order"]:checked')?.value,
-        );
-        sequence = buildSequence(order, total);
-        step = 0;
-      }
-      localStorage.setItem(PlayOrderStorageKey, order);
-      const index = sequence[step] ?? 0;
-      const c = card();
-      if (c && currentFilter(c) === row.dataset.filter && Number(c.dataset.index) === index) {
-        syncPosition();
-        saveProgress();
-        setPlaying(true);
-        return;
-      }
-      playing = true;
-      keepScreenOn(true);
-      if (toggleBtn) toggleBtn.textContent = "⏸ 一時停止";
-      htmx.ajax("get", cardUrl(filter, index), {
-        target: deck,
-        swap: "innerHTML",
-      });
-    });
   }
 
   const positionRange = document.getElementById("card-position") as HTMLInputElement | null;
@@ -389,7 +303,6 @@ const setupDeck = (deck: HTMLElement) => {
   });
 
   document.addEventListener("keydown", (e) => {
-    if (dialog?.open) return;
     if (closest(e.target, "input, select, textarea")) return;
     if (closest(e.target, "button, a") && (e.key === " " || e.key === "Enter")) return;
     if (e.key === "ArrowRight") go("next");
