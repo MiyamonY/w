@@ -32,7 +32,7 @@ export const TestForm = (props: Props) => {
         </label>
         {favoritesCount > 0 && (
           <label class="flex items-center gap-1.5">
-            <input type="checkbox" name="only" value="favorites" />
+            <input type="checkbox" name="only" value="favorites" checked />
             お気に入りから選ぶ（{favoritesCount} 語）
           </label>
         )}
