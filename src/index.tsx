@@ -129,7 +129,6 @@ app.get("/groups/:id{[0-9]+}/cards/:wordId{[0-9]+}", async (c) => {
   if (!word) return c.notFound();
   return c.html(
     <Card
-      groupId={Number(c.req.param("id"))}
       index={index}
       total={total}
       filter={only}

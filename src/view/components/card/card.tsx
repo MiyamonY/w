@@ -7,7 +7,6 @@ import { SpeakButton } from "../speak-button";
 import { WordImage } from "../word-image";
 
 type Props = {
-  groupId: number;
   index: number;
   total: number;
   word: Word;
@@ -19,7 +18,7 @@ const Face =
   "absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white p-6 text-center shadow-lg backface-hidden transition-transform duration-400";
 
 export const Card = (props: Props) => {
-  const { groupId, index, total, word, showExamplesOnFront, filter = "all" } = props;
+  const { index, total, word, showExamplesOnFront, filter = "all" } = props;
   return (
     <article
       id="card"
@@ -53,12 +52,6 @@ export const Card = (props: Props) => {
               ))}
             </ul>
           )}
-          <a
-            href={`/groups/${groupId}/tests`}
-            class="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-blue-700"
-          >
-            4択テスト
-          </a>
         </div>
         <div class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}>
           <div class="flex items-center gap-1">

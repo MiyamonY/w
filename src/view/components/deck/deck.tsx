@@ -30,7 +30,6 @@ export const Deck = (props: Props) => {
         data-examples-on-front={String(settings.show_examples_on_front)}
       >
         <Card
-          groupId={group.id}
           index={start}
           total={wordIds.length}
           filter={filter}
