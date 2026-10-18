@@ -1,4 +1,5 @@
 import type { Passage as PassageData } from "../../backend/passages";
+import { BackToTests } from "../components/back-to-tests";
 import { FavoriteButton } from "../components/favorite-button";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
@@ -34,6 +35,7 @@ export const TestPage = (props: Props) => {
           </li>
         ))}
       </ul>
+      <BackToTests groupId={passage.group_id} />
     </Layout>
   );
 };

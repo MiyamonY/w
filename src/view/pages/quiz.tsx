@@ -1,5 +1,6 @@
 import type { Group } from "../../backend/db";
 import type { QuizQuestion as Question } from "../../backend/quizzes";
+import { BackToTests } from "../components/back-to-tests";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
 import { QuizQuestion } from "../components/quiz-question";
@@ -21,6 +22,7 @@ export const QuizPage = (props: Props) => {
           <QuizQuestion question={q} />
         ))}
       </div>
+      <BackToTests groupId={group.id} />
     </Layout>
   );
 };

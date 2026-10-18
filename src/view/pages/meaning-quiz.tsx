@@ -1,5 +1,6 @@
 import type { Group } from "../../backend/db";
 import type { MeaningQuestion } from "../../backend/meaning-quizzes";
+import { BackToTests } from "../components/back-to-tests";
 import { Layout } from "../components/layout";
 import { MeaningQuizQuestion } from "../components/meaning-quiz-question";
 import { PageHeader } from "../components/page-header";
@@ -21,6 +22,7 @@ export const MeaningQuizPage = (props: Props) => {
           <MeaningQuizQuestion question={q} />
         ))}
       </div>
+      <BackToTests groupId={group.id} />
     </Layout>
   );
 };
