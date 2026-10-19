@@ -1,6 +1,6 @@
 import { shuffle } from "remeda";
 import { z } from "zod/mini";
-import { type CardFilter, isFavorite } from "./db";
+import type { CardFilter } from "./db";
 import { CardFilterSchema, coercedInt, coercedLiteral } from "./paging";
 
 export const QuizQuestionCounts = [10, 20, 30, 50] as const;
@@ -65,9 +65,13 @@ export const pickQuizWordIds = async (
   const { results } = await db
     .prepare(
       `SELECT gw.word_id
-         FROM group_words gw
+         FROM ${
+           filter === "favorites"
+             ? "words fw CROSS JOIN group_words gw ON gw.group_id = ? AND gw.word_id = fw.id"
+             : "group_words gw"
+         }
          LEFT JOIN quiz_stats s ON s.word_id = gw.word_id AND s.kind = '${kind}'
-        WHERE gw.group_id = ? ${filter === "favorites" ? `AND ${isFavorite("gw.word_id")}` : ""}
+        WHERE ${filter === "favorites" ? "fw.favorite = 1" : "gw.group_id = ?"}
         ORDER BY COALESCE(json_extract(s.recent, '$[#-1]'), 0), RANDOM()
         LIMIT ?`,
     )
@@ -130,7 +134,7 @@ type QuestionRow = Omit<QuizQuestion, "number" | "choices" | "chosen" | "history
 const QuestionColumns = `w.id AS word_id, w.term, w.meaning, w.audio_key,
        c.sentence, c.choices, wc.answer, c.translation, c.explanation,
        ${StatsColumns},
-       ${isFavorite("w.id")} AS favorite`;
+       w.favorite`;
 
 const QuestionTables = `cloze_questions c
          JOIN word_choices wc ON wc.word_id = c.word_id

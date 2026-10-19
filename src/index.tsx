@@ -78,19 +78,16 @@ app.get("/words", async (c) => {
     listGroups(db),
     requestedGroupId === undefined ? null : getGroup(db, requestedGroupId),
   ]);
-  const source =
-    group ?? (only === "favorites" ? groups.find((g) => g.kind === "favorites") : null);
-  const filter = source && source.kind !== "favorites" ? only : "all";
-  const total = source
-    ? filter === "favorites"
-      ? source.favorite_count
-      : source.word_count
-    : await countWords(db);
+  const total = group
+    ? only === "favorites"
+      ? group.favorite_count
+      : group.word_count
+    : await countWords(db, only);
   const paging = resolvePaging(c.req.query(), total);
   const range = { limit: paging.per, offset: paging.offset };
-  const words = source
-    ? await listGroupWords(db, source.id, range, filter)
-    : await listAllWords(db, range);
+  const words = group
+    ? await listGroupWords(db, group.id, range, only)
+    : await listAllWords(db, range, only);
   const groupId = group?.id;
   const props = { words, paging, groups, groupId, filter: only };
   c.header("Vary", "HX-Request");

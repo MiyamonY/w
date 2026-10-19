@@ -1,4 +1,3 @@
-import { isFavorite } from "./db";
 import {
   ChoicesSchema,
   inList,
@@ -33,7 +32,7 @@ type MeaningQuestionRow = Omit<
 
 const MeaningQuestionColumns = `w.id AS word_id, w.term, w.ipa, w.audio_key, wc.choices, wc.answer,
        ${StatsColumns},
-       ${isFavorite("w.id")} AS favorite`;
+       w.favorite`;
 
 const MeaningQuestionTables = `word_choices wc
          JOIN words w ON w.id = wc.word_id

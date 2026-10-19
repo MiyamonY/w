@@ -4,7 +4,6 @@ export type Group = {
   description: string | null;
   word_count: number;
   favorite_count: number;
-  kind: "normal" | "favorites";
 };
 
 export type Example = {
@@ -35,7 +34,7 @@ export type Word = {
 export type GroupRef = { id: number; name: string };
 export type WordWithGroups = Word & { groups: GroupRef[] };
 
-const GroupColumns = `id, name, description, kind, word_count, favorite_count`;
+const GroupColumns = `id, name, description, word_count, favorite_count`;
 
 export const listGroups = async (db: D1Database): Promise<Group[]> => {
   const { results } = await db
@@ -52,9 +51,10 @@ export const getGroup = async (db: D1Database, id: number): Promise<Group | null
   return db.prepare(`SELECT ${GroupColumns} FROM word_groups WHERE id = ?`).bind(id).first<Group>();
 };
 
-export const countWords = async (db: D1Database): Promise<number> => {
+export const countWords = async (db: D1Database, filter: CardFilter = "all"): Promise<number> => {
+  const column = filter === "favorites" ? "favorite_count" : "count";
   return (
-    (await db.prepare(`SELECT count FROM word_totals WHERE id = 1`).first<number>("count")) ?? 0
+    (await db.prepare(`SELECT ${column} FROM word_totals WHERE id = 1`).first<number>(column)) ?? 0
   );
 };
 
@@ -85,24 +85,16 @@ const GroupsJson = `
             WHERE x.word_id = w.id
             ORDER BY g.sort_order, g.id)) AS groups_json`;
 
-const FavoritesGroupId = `(SELECT id FROM word_groups WHERE kind = 'favorites')`;
-
-// 件数の少ないお気に入り側から読むよう、CROSS JOIN で結合順を固定する
+// 件数の少ないお気に入り側（idx_words_favorite）から読むよう、CROSS JOIN で結合順を固定する
 const GroupFavoriteIds = `
   SELECT gw.word_id, gw.sort_order
-    FROM group_words f
-   CROSS JOIN group_words gw ON gw.group_id = ? AND gw.word_id = f.word_id
-   WHERE f.group_id = ${FavoritesGroupId}`;
+    FROM words fw
+   CROSS JOIN group_words gw ON gw.group_id = ? AND gw.word_id = fw.id
+   WHERE fw.favorite = 1`;
 
 const GroupWordIds = `SELECT word_id, sort_order FROM group_words WHERE group_id = ?`;
 
-export const isFavorite = (wordId: string) => `
-  EXISTS (SELECT 1 FROM group_words fx JOIN word_groups fg ON fg.id = fx.group_id
-           WHERE fg.kind = 'favorites' AND fx.word_id = ${wordId})`;
-
-const FavoriteColumn = `${isFavorite("w.id")} AS favorite`;
-
-const WordColumns = `w.id, w.term, w.ipa, w.meaning, w.audio_key, w.image_key, ${ExamplesJson}, ${NumbersJson}, ${FavoriteColumn}`;
+const WordColumns = `w.id, w.term, w.ipa, w.meaning, w.audio_key, w.image_key, ${ExamplesJson}, ${NumbersJson}, w.favorite`;
 
 type WordRow = Omit<Word, "examples" | "numbers" | "favorite"> & {
   examples_json: string;
@@ -171,11 +163,13 @@ export const listGroupWords = async (
 export const listAllWords = async (
   db: D1Database,
   range: { limit: number; offset: number },
+  filter: CardFilter = "all",
 ): Promise<WordWithGroups[]> => {
   const { results } = await db
     .prepare(
       `SELECT ${WordColumns}, ${GroupsJson}
-         FROM (SELECT id FROM words ORDER BY id LIMIT ? OFFSET ?) page
+         FROM (SELECT id FROM words ${filter === "favorites" ? "WHERE favorite = 1" : ""}
+                ORDER BY id LIMIT ? OFFSET ?) page
          JOIN words w ON w.id = page.id
         ORDER BY w.id`,
     )
@@ -184,20 +178,8 @@ export const listAllWords = async (
   return results.map(toWordWithGroups);
 };
 
-export const toggleFavorite = async (db: D1Database, wordId: number): Promise<boolean> => {
-  const removed = await db
-    .prepare(`DELETE FROM group_words WHERE group_id = ${FavoritesGroupId} AND word_id = ?`)
+export const toggleFavorite = async (db: D1Database, wordId: number): Promise<boolean> =>
+  (await db
+    .prepare(`UPDATE words SET favorite = 1 - favorite WHERE id = ? RETURNING favorite`)
     .bind(wordId)
-    .run();
-  if (removed.meta.changes > 0) return false;
-  await db
-    .prepare(
-      `INSERT INTO group_words (group_id, word_id, sort_order)
-       SELECT ${FavoritesGroupId}, w.id,
-              COALESCE((SELECT MAX(sort_order) FROM group_words WHERE group_id = ${FavoritesGroupId}), 0) + 1
-         FROM words w WHERE w.id = ?`,
-    )
-    .bind(wordId)
-    .run();
-  return true;
-};
+    .first<number>("favorite")) === 1;
