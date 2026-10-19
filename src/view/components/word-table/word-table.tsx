@@ -15,6 +15,7 @@ const Head = "px-3 py-2.5";
 const Cell =
   "block py-0.5 empty:hidden md:table-cell md:px-3 md:py-2.5 md:align-top md:empty:table-cell";
 const SubRow = "block md:table-row";
+const Revealable = "invisible group-data-[open]/word:visible";
 const SubCell = "block pt-1.5 md:table-cell md:px-3 md:pt-0 md:pb-2";
 
 export const WordTable = (props: Props) => {
@@ -34,7 +35,10 @@ export const WordTable = (props: Props) => {
       {words.map((w, i) => {
         const groups = w.groups.filter((g) => g.id !== currentGroupId);
         return (
-          <tbody class="mb-3 block rounded-xl bg-white p-3 shadow-sm md:mb-0 md:table-row-group md:rounded-none md:p-0 md:shadow-none">
+          <tbody
+            data-word-item
+            class="group/word mb-3 block cursor-pointer rounded-xl bg-white p-3 shadow-sm md:mb-0 md:table-row-group md:rounded-none md:p-0 md:shadow-none"
+          >
             <tr class="block md:table-row md:border-t md:border-neutral-200">
               <td class="hidden text-right text-neutral-400 tabular-nums md:table-cell md:px-3 md:py-2.5 md:align-top">
                 {w.id}
@@ -61,11 +65,9 @@ export const WordTable = (props: Props) => {
                 <FavoriteButton wordId={w.id} favorite={w.favorite} />
                 {w.ipa && <div class="text-sm font-normal text-neutral-500">/{w.ipa}/</div>}
               </td>
-              <td class={`${Cell} text-neutral-800 group-data-[ja=off]/words:invisible`}>
-                {w.meaning}
-              </td>
+              <td class={`${Cell} text-neutral-800 ${Revealable}`}>{w.meaning}</td>
               <td class={`${Cell} pt-1.5 md:pt-2.5`}>
-                {w.examples.length > 0 && <Examples examples={w.examples} />}
+                {w.examples.length > 0 && <Examples examples={w.examples} revealable />}
               </td>
             </tr>
             {groups.length > 0 && (
