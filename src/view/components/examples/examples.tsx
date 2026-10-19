@@ -14,7 +14,11 @@ export const Examples = (props: Props) => {
         <li class="example flex items-start gap-2" data-audio={audioUrl(e.audio_key)}>
           <div class="flex-1">
             <div class="text-neutral-700">{e.sentence}</div>
-            {e.translation && <div class="text-sm text-neutral-500">{e.translation}</div>}
+            {e.translation && (
+              <div class="text-sm text-neutral-500 group-data-[ja=off]/words:invisible">
+                {e.translation}
+              </div>
+            )}
             {e.source_title && (
               <div class="text-xs text-neutral-400">
                 出典:{" "}

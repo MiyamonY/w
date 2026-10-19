@@ -1,16 +1,17 @@
-import type { Group } from "../../../backend/db";
+import type { CardFilter, Group } from "../../../backend/db";
 import { PerPageOptions } from "../../../backend/paging";
 
 type Props = {
   groups: Group[];
   groupId?: number;
+  filter: CardFilter;
   per: number;
 };
 
 const Select = "rounded-md border border-neutral-300 bg-white p-1";
 
 export const WordListFilter = (props: Props) => {
-  const { groups, groupId, per } = props;
+  const { groups, groupId, filter, per } = props;
   return (
     <form
       method="get"
@@ -31,6 +32,10 @@ export const WordListFilter = (props: Props) => {
             </option>
           ))}
         </select>
+      </label>
+      <label class="flex items-center gap-1.5">
+        <input type="checkbox" name="only" value="favorites" checked={filter === "favorites"} />
+        お気に入りのみ
       </label>
       <label class="flex items-center gap-1.5">
         表示件数

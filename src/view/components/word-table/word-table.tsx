@@ -61,7 +61,9 @@ export const WordTable = (props: Props) => {
                 <FavoriteButton wordId={w.id} favorite={w.favorite} />
                 {w.ipa && <div class="text-sm font-normal text-neutral-500">/{w.ipa}/</div>}
               </td>
-              <td class={`${Cell} text-neutral-800`}>{w.meaning}</td>
+              <td class={`${Cell} text-neutral-800 group-data-[ja=off]/words:invisible`}>
+                {w.meaning}
+              </td>
               <td class={`${Cell} pt-1.5 md:pt-2.5`}>
                 {w.examples.length > 0 && <Examples examples={w.examples} />}
               </td>

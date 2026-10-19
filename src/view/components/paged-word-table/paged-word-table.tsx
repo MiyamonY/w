@@ -1,4 +1,4 @@
-import type { Group, WordWithGroups } from "../../../backend/db";
+import type { CardFilter, Group, WordWithGroups } from "../../../backend/db";
 import type { Paging } from "../../../backend/paging";
 import { wordsUrl } from "../../helper/words-url";
 import { Pagination } from "../pagination";
@@ -10,11 +10,14 @@ type Props = {
   paging: Paging;
   groups: Group[];
   groupId?: number;
+  filter: CardFilter;
 };
 
 export const PagedWordTable = (props: Props) => {
-  const { words, paging, groups, groupId } = props;
-  const href = (page: number) => wordsUrl({ group: groupId, page, per: paging.per });
+  const { words, paging, groups, groupId, filter } = props;
+  const only = filter === "favorites" ? "favorites" : undefined;
+  const href = (page: number) => wordsUrl({ group: groupId, only, page, per: paging.per });
+  const cardQuery = only ? "&only=favorites" : "";
   return (
     <section
       id="paged-word-table"
@@ -22,12 +25,14 @@ export const PagedWordTable = (props: Props) => {
       hx-swap="outerHTML show:window:top"
       hx-push-url="true"
     >
-      <WordListFilter groups={groups} groupId={groupId} per={paging.per} />
+      <WordListFilter groups={groups} groupId={groupId} filter={filter} per={paging.per} />
       <Pagination paging={paging} href={href} />
       <WordTable
         words={words}
         cardHref={
-          groupId === undefined ? undefined : (i) => `/groups/${groupId}?start=${paging.offset + i}`
+          groupId === undefined
+            ? undefined
+            : (i) => `/groups/${groupId}?start=${paging.offset + i}${cardQuery}`
         }
         currentGroupId={groupId}
       />

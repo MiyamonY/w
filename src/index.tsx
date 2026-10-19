@@ -31,6 +31,7 @@ import {
   QuizRequestSchema,
 } from "./backend/quizzes";
 import {
+  CardFilterSchema,
   CardQuerySchema,
   GroupFilterSchema,
   PlayerQuerySchema,
@@ -72,23 +73,28 @@ app.get("/", async (c) => {
 app.get("/words", async (c) => {
   const db = c.env.DB;
   const requestedGroupId = GroupFilterSchema.parse(c.req.query("group"));
+  const only = CardFilterSchema.parse(c.req.query("only"));
   const [groups, group] = await Promise.all([
     listGroups(db),
     requestedGroupId === undefined ? null : getGroup(db, requestedGroupId),
   ]);
-  const total = group ? group.word_count : await countWords(db);
+  const source =
+    group ?? (only === "favorites" ? groups.find((g) => g.kind === "favorites") : null);
+  const filter = source && source.kind !== "favorites" ? only : "all";
+  const total = source
+    ? filter === "favorites"
+      ? source.favorite_count
+      : source.word_count
+    : await countWords(db);
   const paging = resolvePaging(c.req.query(), total);
   const range = { limit: paging.per, offset: paging.offset };
-  const words = group ? await listGroupWords(db, group.id, range) : await listAllWords(db, range);
+  const words = source
+    ? await listGroupWords(db, source.id, range, filter)
+    : await listAllWords(db, range);
   const groupId = group?.id;
+  const props = { words, paging, groups, groupId, filter: only };
   c.header("Vary", "HX-Request");
-  return c.html(
-    wantsFragment(c) ? (
-      <PagedWordTable words={words} paging={paging} groups={groups} groupId={groupId} />
-    ) : (
-      <AllWordList words={words} paging={paging} groups={groups} groupId={groupId} />
-    ),
-  );
+  return c.html(wantsFragment(c) ? <PagedWordTable {...props} /> : <AllWordList {...props} />);
 });
 
 app.get("/groups/:id{[0-9]+}", async (c) => {

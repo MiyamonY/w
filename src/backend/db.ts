@@ -154,11 +154,14 @@ export const listGroupWords = async (
   db: D1Database,
   groupId: number,
   range: { limit: number; offset: number },
+  filter: CardFilter = "all",
 ): Promise<WordWithGroups[]> => {
   const { results } = await db
     .prepare(
       `SELECT ${WordColumns}, ${GroupsJson}
-         FROM (${GroupWordIds} ORDER BY sort_order, word_id LIMIT ? OFFSET ?) page
+         FROM (SELECT word_id, sort_order
+                 FROM (${filter === "favorites" ? GroupFavoriteIds : GroupWordIds})
+                ORDER BY sort_order, word_id LIMIT ? OFFSET ?) page
          JOIN words w ON w.id = page.word_id
         ORDER BY page.sort_order, page.word_id`,
     )

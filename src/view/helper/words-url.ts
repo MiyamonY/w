@@ -2,6 +2,7 @@ import { isDefined, mapValues, pickBy } from "remeda";
 
 export type WordsQuery = {
   group?: number;
+  only?: "favorites";
   page?: number;
   per?: number;
 };
