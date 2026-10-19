@@ -12,6 +12,7 @@ import {
   loadProgress,
   storeProgress,
 } from "../../helper/card-progress.client";
+import { type AudioMode, AudioModeStorageKey, parseAudioMode } from "../../helper/audio-mode";
 import { parsePlayOrder } from "../../helper/play-order";
 import { clamp, range, shuffle } from "remeda";
 
@@ -27,7 +28,8 @@ const exampleAudios = (c: HTMLElement) =>
     (el) => el.dataset.audio ?? [],
   );
 
-const frontAudios = (c: HTMLElement) => [...wordAudio(c), ...exampleAudios(c)];
+const frontAudios = (c: HTMLElement, mode: AudioMode) =>
+  mode === "word" ? wordAudio(c) : [...wordAudio(c), ...exampleAudios(c)];
 
 const flip = (force?: boolean) => {
   card()?.classList.toggle("flipped", force);
@@ -94,6 +96,7 @@ const setupDeck = (deck: HTMLElement) => {
   const autoAudioOn = () => autoAudio?.checked ?? false;
 
   let order = parsePlayOrder(localStorage.getItem(PlayOrderStorageKey));
+  const audioMode = parseAudioMode(localStorage.getItem(AudioModeStorageKey));
   let sequence: number[] = [];
   let step = 0;
 
@@ -141,7 +144,7 @@ const setupDeck = (deck: HTMLElement) => {
       if (rest > 0) await wait(rest);
     };
     if (!c.classList.contains("flipped")) {
-      await hold(frontAudios(c), frontMs);
+      await hold(frontAudios(c, audioMode), frontMs);
       if (my !== gen) return;
       flip(true);
     }
@@ -165,7 +168,7 @@ const setupDeck = (deck: HTMLElement) => {
     stop();
     const c = card();
     if (!c || !autoAudioOn() || c.classList.contains("flipped")) return;
-    playQueue(frontAudios(c), gen);
+    playQueue(frontAudios(c, audioMode), gen);
   };
 
   const toggleFlip = () => {

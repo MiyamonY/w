@@ -4,6 +4,7 @@ import {
   PlayOrderStorageKey,
   storeProgress,
 } from "../../helper/card-progress.client";
+import { AudioModeStorageKey, parseAudioMode } from "../../helper/audio-mode";
 import { PlayOrderLabels, parsePlayOrder } from "../../helper/play-order";
 
 const closest = (target: EventTarget | null, selector: string) =>
@@ -22,6 +23,21 @@ const isOutside = (dialog: HTMLDialogElement, e: MouseEvent) => {
 const setupStartDialog = (dialog: HTMLDialogElement) => {
   const rows = [...dialog.querySelectorAll<HTMLElement>("section[data-filter]")];
   let groupId = "";
+
+  const check = (name: string, value: string) => {
+    const input = dialog.querySelector<HTMLInputElement>(`input[name="${name}"][value="${value}"]`);
+    if (input) input.checked = true;
+  };
+
+  const StorageKeys: Record<string, string> = {
+    "play-order": PlayOrderStorageKey,
+    "audio-mode": AudioModeStorageKey,
+  };
+  dialog.addEventListener("change", (e) => {
+    if (!(e.target instanceof HTMLInputElement)) return;
+    const key = StorageKeys[e.target.name];
+    if (key) localStorage.setItem(key, e.target.value);
+  });
 
   const open = (opener: HTMLElement) => {
     groupId = opener.dataset.startDialog ?? "";
@@ -43,11 +59,8 @@ const setupStartDialog = (dialog: HTMLDialogElement) => {
         resume.textContent = `続きから（${PlayOrderLabels[progress.order]} ${progress.step + 1} / ${total}）`;
       }
     }
-    const order = parsePlayOrder(localStorage.getItem(PlayOrderStorageKey));
-    const orderInput = dialog.querySelector<HTMLInputElement>(
-      `input[name="play-order"][value="${order}"]`,
-    );
-    if (orderInput) orderInput.checked = true;
+    check("play-order", parsePlayOrder(localStorage.getItem(PlayOrderStorageKey)));
+    check("audio-mode", parseAudioMode(localStorage.getItem(AudioModeStorageKey)));
     dialog.showModal();
   };
 
