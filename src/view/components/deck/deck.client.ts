@@ -56,28 +56,6 @@ const keepScreenOn = async (on: boolean) => {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const preloaded: HTMLAudioElement[] = [];
-const preloadAudio = (src: string) => {
-  if (preloaded.some((audio) => audio.src.endsWith(src))) return;
-  const audio = new Audio();
-  audio.preload = "auto";
-  audio.src = src;
-  preloaded.push(audio);
-  if (preloaded.length > 8) preloaded.shift();
-};
-
-const preloadCard = async (url: string) => {
-  const res = await fetch(url).catch(() => null);
-  if (!res?.ok) return;
-  const doc = new DOMParser().parseFromString(await res.text(), "text/html");
-  for (const el of doc.querySelectorAll<HTMLElement>("#card[data-audio], .example[data-audio]")) {
-    if (el.dataset.audio) preloadAudio(el.dataset.audio);
-  }
-  for (const img of doc.querySelectorAll("img[src]")) {
-    new Image().src = img.getAttribute("src") ?? "";
-  }
-};
-
 const setupDeck = (deck: HTMLElement) => {
   const groupId = deck.dataset.groupId ?? "";
   const wordIds: number[] = JSON.parse(deck.dataset.wordIds ?? "[]");
@@ -246,12 +224,6 @@ const setupDeck = (deck: HTMLElement) => {
 
   const advance = () => go("next");
 
-  const preloadNext = () => {
-    const c = card();
-    if (!c || sequence.length < 2 || step === sequence.length - 1) return;
-    preloadCard(cardUrl(currentFilter(c), sequence[step + 1] ?? 0));
-  };
-
   for (const button of document.querySelectorAll<HTMLElement>("[data-nav-button]")) {
     button.addEventListener("click", () =>
       go(button.dataset.navButton === "prev" ? "prev" : "next"),
@@ -282,13 +254,11 @@ const setupDeck = (deck: HTMLElement) => {
     jumpTo(Number(positionInput.value));
   });
   syncPosition();
-  preloadNext();
 
   document.body.addEventListener("htmx:afterSettle", (e) => {
     if (e.target !== deck) return;
     syncPosition();
     saveProgress();
-    preloadNext();
     if (playing) run();
     else playCurrentFace();
   });
