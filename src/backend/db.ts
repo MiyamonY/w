@@ -102,9 +102,7 @@ export const isFavorite = (wordId: string) => `
 
 const FavoriteColumn = `${isFavorite("w.id")} AS favorite`;
 
-const ImageKey = `(SELECT wi.image_key FROM word_images wi WHERE wi.word_id = w.id AND wi.status = 'done') AS image_key`;
-
-const WordColumns = `w.id, w.term, w.ipa, w.meaning, w.audio_key, ${ImageKey}, ${ExamplesJson}, ${NumbersJson}, ${FavoriteColumn}`;
+const WordColumns = `w.id, w.term, w.ipa, w.meaning, w.audio_key, w.image_key, ${ExamplesJson}, ${NumbersJson}, ${FavoriteColumn}`;
 
 type WordRow = Omit<Word, "examples" | "numbers" | "favorite"> & {
   examples_json: string;
