@@ -58,24 +58,14 @@ export const countWords = async (db: D1Database, filter: CardFilter = "all"): Pr
   );
 };
 
-const ExamplesJson = `
+const SourcesJson = `
   (SELECT json_group_array(json_object(
-            'sentence', sentence, 'translation', translation, 'audio_key', audio_key,
-            'source_title', source_title, 'source_url', source_url))
-     FROM (SELECT e.sentence, e.translation, e.audio_key,
-                  s.title AS source_title, s.url AS source_url
-             FROM examples e
-             LEFT JOIN sources s ON s.id = e.source_id
-            WHERE e.word_id = w.id
-            ORDER BY e.sort_order, e.id)) AS examples_json`;
-
-const NumbersJson = `
-  (SELECT json_group_array(json_object('number', number, 'source_title', source_title))
-     FROM (SELECT sw.number, s.title AS source_title
-             FROM source_words sw
-             JOIN sources s ON s.id = sw.source_id
-            WHERE sw.word_id = w.id
-            ORDER BY s.id)) AS numbers_json`;
+            'number', number, 'examples', json(examples), 'title', title, 'url', url))
+     FROM (SELECT ws.number, ws.examples, s.title, s.url
+             FROM word_sources ws
+             JOIN sources s ON s.id = ws.source_id
+            WHERE ws.word_id = w.id
+            ORDER BY ws.source_id)) AS sources_json`;
 
 const GroupsJson = `
   (SELECT json_group_array(json_object('id', id, 'name', name))
@@ -94,21 +84,32 @@ const GroupFavoriteIds = `
 
 const GroupWordIds = `SELECT word_id, sort_order FROM group_words WHERE group_id = ?`;
 
-const WordColumns = `w.id, w.term, w.ipa, w.meaning, w.audio_key, w.image_key, ${ExamplesJson}, ${NumbersJson}, w.favorite`;
+const WordColumns = `w.id, w.term, w.ipa, w.meaning, w.audio_key, w.image_key, ${SourcesJson}, w.favorite`;
 
 type WordRow = Omit<Word, "examples" | "numbers" | "favorite"> & {
-  examples_json: string;
-  numbers_json: string;
+  sources_json: string;
   favorite: number;
+};
+
+type WordSource = {
+  number: number;
+  examples: Pick<Example, "sentence" | "translation" | "audio_key">[];
+  title: string;
+  url: string | null;
 };
 type WordWithGroupsRow = WordRow & { groups_json: string };
 
-const toWord = ({ examples_json, numbers_json, favorite, ...w }: WordRow): Word => ({
-  ...w,
-  examples: JSON.parse(examples_json) as Example[],
-  numbers: JSON.parse(numbers_json) as SourceNumber[],
-  favorite: favorite === 1,
-});
+const toWord = ({ sources_json, favorite, ...w }: WordRow): Word => {
+  const sources = JSON.parse(sources_json) as WordSource[];
+  return {
+    ...w,
+    examples: sources.flatMap((s) =>
+      s.examples.map((e) => ({ ...e, source_title: s.title, source_url: s.url })),
+    ),
+    numbers: sources.map((s) => ({ number: s.number, source_title: s.title })),
+    favorite: favorite === 1,
+  };
+};
 
 const toWordWithGroups = ({ groups_json, ...row }: WordWithGroupsRow): WordWithGroups => ({
   ...toWord(row),
