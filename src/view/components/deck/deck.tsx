@@ -27,15 +27,8 @@ export const Deck = (props: Props) => {
         hx-swap="innerHTML swap:250ms"
         data-front-ms={String(settings.front_ms)}
         data-back-ms={String(settings.back_ms)}
-        data-examples-on-front={String(settings.show_examples_on_front)}
       >
-        <Card
-          index={start}
-          total={wordIds.length}
-          filter={filter}
-          word={first}
-          showExamplesOnFront={settings.show_examples_on_front}
-        />
+        <Card index={start} total={wordIds.length} filter={filter} word={first} />
       </div>
       <CardPosition position={start + 1} total={wordIds.length} />
       <div class="flex flex-wrap items-center justify-center gap-4">

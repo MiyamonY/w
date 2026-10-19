@@ -27,6 +27,8 @@ const exampleAudios = (c: HTMLElement) =>
     (el) => el.dataset.audio ?? [],
   );
 
+const frontAudios = (c: HTMLElement) => [...wordAudio(c), ...exampleAudios(c)];
+
 const flip = (force?: boolean) => {
   card()?.classList.toggle("flipped", force);
 };
@@ -84,10 +86,6 @@ const setupDeck = (deck: HTMLElement) => {
   };
   const frontMs = Number(deck.dataset.frontMs);
   const backMs = Number(deck.dataset.backMs);
-  const examplesOnFront = deck.dataset.examplesOnFront === "true";
-  const frontAudios = (c: HTMLElement) =>
-    examplesOnFront ? [...wordAudio(c), ...exampleAudios(c)] : wordAudio(c);
-  const backAudios = (c: HTMLElement) => (examplesOnFront ? [] : exampleAudios(c));
   const toggleBtn = document.getElementById("toggle-play");
   const autoAudio = document.getElementById("auto-audio") as HTMLInputElement | null;
   let playing = false;
@@ -147,7 +145,7 @@ const setupDeck = (deck: HTMLElement) => {
       if (my !== gen) return;
       flip(true);
     }
-    await hold(backAudios(c), backMs);
+    await hold([], backMs);
     if (my !== gen) return;
     advance();
   };
@@ -166,8 +164,8 @@ const setupDeck = (deck: HTMLElement) => {
   const playCurrentFace = () => {
     stop();
     const c = card();
-    if (!c || !autoAudioOn()) return;
-    playQueue(c.classList.contains("flipped") ? backAudios(c) : frontAudios(c), gen);
+    if (!c || !autoAudioOn() || c.classList.contains("flipped")) return;
+    playQueue(frontAudios(c), gen);
   };
 
   const toggleFlip = () => {

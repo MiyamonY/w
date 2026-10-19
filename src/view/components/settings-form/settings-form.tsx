@@ -47,14 +47,6 @@ export const SettingsForm = (props: Props) => {
         自動再生で次へ進むまでの最低時間です（{MinDisplayMs}〜{MaxDisplayMs}
         ミリ秒）。音声が長い場合は再生が終わるまで待ちます。
       </p>
-      <label class="flex items-center gap-2">
-        <input
-          type="checkbox"
-          name="show_examples_on_front"
-          checked={settings.show_examples_on_front}
-        />
-        <span>カードの表に例文（英語のみ）を表示する</span>
-      </label>
       <button
         type="submit"
         class="cursor-pointer justify-self-start rounded-full bg-blue-700 px-6 py-2.5 text-white"

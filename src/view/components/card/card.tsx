@@ -10,7 +10,6 @@ type Props = {
   index: number;
   total: number;
   word: Word;
-  showExamplesOnFront: boolean;
   filter?: CardFilter;
 };
 
@@ -18,7 +17,7 @@ const Face =
   "absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white p-6 text-center shadow-lg backface-hidden transition-transform duration-400";
 
 export const Card = (props: Props) => {
-  const { index, total, word, showExamplesOnFront, filter = "all" } = props;
+  const { index, total, word, filter = "all" } = props;
   return (
     <article
       id="card"
@@ -45,7 +44,7 @@ export const Card = (props: Props) => {
             />
           </div>
           {word.ipa && <div class="-mt-2 text-lg text-neutral-500">/{word.ipa}/</div>}
-          {showExamplesOnFront && word.examples.length > 0 && (
+          {word.examples.length > 0 && (
             <ul class="grid gap-1.5 text-neutral-600">
               {word.examples.map((e) => (
                 <li>{e.sentence}</li>

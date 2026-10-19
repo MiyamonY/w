@@ -128,20 +128,9 @@ app.get("/groups/:id{[0-9]+}/words", (c) =>
 
 app.get("/groups/:id{[0-9]+}/cards/:wordId{[0-9]+}", async (c) => {
   const { index, total, only } = CardQuerySchema.parse(c.req.query());
-  const [word, settings] = await Promise.all([
-    getWord(c.env.DB, Number(c.req.param("wordId"))),
-    getSettings(c.env.DB),
-  ]);
+  const word = await getWord(c.env.DB, Number(c.req.param("wordId")));
   if (!word) return c.notFound();
-  return c.html(
-    <Card
-      index={index}
-      total={total}
-      filter={only}
-      word={word}
-      showExamplesOnFront={settings.show_examples_on_front}
-    />,
-  );
+  return c.html(<Card index={index} total={total} filter={only} word={word} />);
 });
 
 app.post("/words/:id{[0-9]+}/favorite", async (c) => {
