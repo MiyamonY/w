@@ -3,6 +3,7 @@ import type { Settings } from "../../../backend/settings";
 import { DefaultPlaybackRate, formatPlaybackRate, PlaybackRates } from "../../helper/playback-rate";
 import { Card } from "../card";
 import { CardPosition } from "../card-position";
+import { ElapsedTime } from "../elapsed-time";
 
 type Props = {
   group: Group;
@@ -57,6 +58,7 @@ export const Deck = (props: Props) => {
           </select>
         </label>
       </div>
+      <ElapsedTime />
       <nav class="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white/95 backdrop-blur">
         <div class="mx-auto grid max-w-140 grid-cols-2">
           <button
