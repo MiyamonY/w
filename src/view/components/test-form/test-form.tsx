@@ -40,9 +40,9 @@ export const TestForm = (props: Props) => {
       <div class="flex items-center gap-3">
         <button
           type="submit"
-          class="cursor-pointer rounded-full bg-blue-700 px-6 py-2.5 text-white disabled:opacity-50"
+          class="cursor-pointer rounded-full bg-blue-50 px-6 py-2.5 text-blue-700 disabled:opacity-50"
         >
-          英文を生成
+          開始
         </button>
         <span id="generating" class="htmx-indicator text-sm text-neutral-500">
           生成しています（10〜30秒ほどかかります）…

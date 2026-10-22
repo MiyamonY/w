@@ -41,9 +41,9 @@ export const MeaningQuizForm = (props: Props) => {
         <button
           type="submit"
           disabled={questionCount === 0}
-          class="cursor-pointer rounded-full bg-blue-700 px-6 py-2.5 text-white disabled:opacity-50"
+          class="cursor-pointer rounded-full bg-blue-50 px-6 py-2.5 text-blue-700 disabled:opacity-50"
         >
-          意味の4択を始める
+          開始
         </button>
       </div>
       {error && <p class="text-sm text-red-700">{error}</p>}
