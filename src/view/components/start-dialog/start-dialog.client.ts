@@ -5,6 +5,7 @@ import {
   storeProgress,
 } from "../../helper/card-progress.client";
 import { AudioModeStorageKey, parseAudioMode } from "../../helper/audio-mode";
+import { type CardFilter, CardFilterStorageKey, parseCardFilter } from "../../helper/card-filter";
 import { PlayOrderLabels, parsePlayOrder } from "../../helper/play-order";
 
 const closest = (target: EventTarget | null, selector: string) =>
@@ -21,8 +22,34 @@ const isOutside = (dialog: HTMLDialogElement, e: MouseEvent) => {
 };
 
 const setupStartDialog = (dialog: HTMLDialogElement) => {
-  const rows = [...dialog.querySelectorAll<HTMLElement>("section[data-filter]")];
+  const favoritesInput = dialog.querySelector<HTMLInputElement>(
+    'input[name="card-filter"][value="favorites"]',
+  );
+  const count = dialog.querySelector("[data-count]");
+  const resume = dialog.querySelector<HTMLButtonElement>('[data-start="resume"]');
+  let currentOpener: HTMLElement | null = null;
   let groupId = "";
+
+  const currentFilter = (): CardFilter => (favoritesInput?.checked ? "favorites" : "all");
+  const totalOf = (filter: CardFilter) =>
+    Number(
+      filter === "favorites"
+        ? currentOpener?.dataset.favoritesCount
+        : currentOpener?.dataset.allCount,
+    );
+
+  const refresh = () => {
+    const filter = currentFilter();
+    const total = totalOf(filter);
+    if (count) count.textContent = `${total} 語`;
+    if (!resume) return;
+    const saved = loadProgress(groupId, filter, total);
+    const progress = saved?.order === "random" ? null : saved;
+    resume.hidden = !progress;
+    if (progress) {
+      resume.textContent = `続きから（${PlayOrderLabels[progress.order]} ${progress.step + 1} / ${total}）`;
+    }
+  };
 
   const check = (name: string, value: string) => {
     const input = dialog.querySelector<HTMLInputElement>(`input[name="${name}"][value="${value}"]`);
@@ -32,33 +59,23 @@ const setupStartDialog = (dialog: HTMLDialogElement) => {
   const StorageKeys: Record<string, string> = {
     "play-order": PlayOrderStorageKey,
     "audio-mode": AudioModeStorageKey,
+    "card-filter": CardFilterStorageKey,
   };
   dialog.addEventListener("change", (e) => {
     if (!(e.target instanceof HTMLInputElement)) return;
     const key = StorageKeys[e.target.name];
     if (key) localStorage.setItem(key, e.target.value);
+    if (e.target.name === "card-filter") refresh();
   });
 
-  const open = (opener: HTMLElement) => {
-    groupId = opener.dataset.startDialog ?? "";
-    for (const row of rows) {
-      const filter = row.dataset.filter ?? "all";
-      const total = Number(
-        filter === "favorites" ? opener.dataset.favoritesCount : opener.dataset.allCount,
-      );
-      row.dataset.total = String(total);
-      row.hidden = total === 0;
-      const count = row.querySelector("[data-count]");
-      if (count) count.textContent = `${total} 語`;
-      const resume = row.querySelector<HTMLButtonElement>('[data-start="resume"]');
-      if (!resume) continue;
-      const saved = loadProgress(groupId, filter, total);
-      const progress = saved?.order === "random" ? null : saved;
-      resume.hidden = !progress;
-      if (progress) {
-        resume.textContent = `続きから（${PlayOrderLabels[progress.order]} ${progress.step + 1} / ${total}）`;
-      }
-    }
+  const open = (target: HTMLElement) => {
+    currentOpener = target;
+    groupId = target.dataset.startDialog ?? "";
+    const hasFavorites = totalOf("favorites") > 0;
+    if (favoritesInput) favoritesInput.disabled = !hasFavorites;
+    const saved = parseCardFilter(localStorage.getItem(CardFilterStorageKey));
+    check("card-filter", hasFavorites ? saved : "all");
+    refresh();
     check("play-order", parsePlayOrder(localStorage.getItem(PlayOrderStorageKey)));
     check("audio-mode", parseAudioMode(localStorage.getItem(AudioModeStorageKey)));
     dialog.showModal();
@@ -77,10 +94,9 @@ const setupStartDialog = (dialog: HTMLDialogElement) => {
       return;
     }
     const button = closest(e.target, "[data-start]");
-    const row = closest(e.target, "section[data-filter]");
-    if (!button || !row) return;
-    const filter = row.dataset.filter ?? "all";
-    const total = Number(row.dataset.total);
+    if (!button) return;
+    const filter = currentFilter();
+    const total = totalOf(filter);
     const resumed = button.dataset.start === "resume" ? loadProgress(groupId, filter, total) : null;
     const order =
       resumed?.order ??

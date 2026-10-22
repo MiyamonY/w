@@ -1,8 +1,9 @@
-import type { CardFilter } from "../../../backend/db";
 import { AudioModeLabels, AudioModes, parseAudioMode } from "../../helper/audio-mode";
+import { CardFilterLabels, CardFilters, parseCardFilter } from "../../helper/card-filter";
 import { PlayOrderLabels, PlayOrders, parsePlayOrder } from "../../helper/play-order";
 
-const StartButton = "cursor-pointer rounded-lg px-3 py-2 text-sm shadow-sm";
+const StartButton =
+  "cursor-pointer rounded-lg bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-700";
 
 const segmented = (props: {
   legend: string;
@@ -14,7 +15,7 @@ const segmented = (props: {
     <legend class="mb-1.5 text-sm text-neutral-500">{props.legend}</legend>
     <div class="flex overflow-hidden rounded-lg border border-neutral-300 text-sm">
       {props.options.map((option) => (
-        <label class="flex-1 cursor-pointer border-l border-neutral-300 py-2 text-center first:border-l-0 has-checked:bg-blue-700 has-checked:text-white">
+        <label class="flex-1 cursor-pointer border-l border-neutral-300 py-2 text-center first:border-l-0 has-checked:bg-blue-700 has-checked:text-white has-disabled:cursor-not-allowed has-disabled:opacity-40">
           <input
             type="radio"
             name={props.name}
@@ -27,23 +28,6 @@ const segmented = (props: {
       ))}
     </div>
   </fieldset>
-);
-
-const choiceRow = (props: { filter: CardFilter; label: string; tone: string; button: string }) => (
-  <section data-filter={props.filter} class={`rounded-xl p-3 ${props.tone}`}>
-    <div class="flex items-center justify-between">
-      <span class="font-semibold">{props.label}</span>
-      <span data-count class="text-sm opacity-80" />
-    </div>
-    <div class="mt-2 grid grid-cols-2 gap-2">
-      <button type="button" data-start="first" class={`${StartButton} ${props.button}`}>
-        最初から
-      </button>
-      <button type="button" data-start="resume" hidden class={`${StartButton} ${props.button}`}>
-        続きから
-      </button>
-    </div>
-  </section>
 );
 
 export const StartDialog = () => {
@@ -65,19 +49,20 @@ export const StartDialog = () => {
         options: AudioModes.map((mode) => ({ value: mode, label: AudioModeLabels[mode] })),
         checked: parseAudioMode(null),
       })}
-      <div class="grid gap-3">
-        {choiceRow({
-          filter: "all",
-          label: "すべての単語",
-          tone: "bg-blue-50 text-blue-900",
-          button: "bg-blue-700 text-white",
-        })}
-        {choiceRow({
-          filter: "favorites",
-          label: "★ お気に入りのみ",
-          tone: "bg-amber-50 text-amber-900",
-          button: "bg-amber-500 text-white",
-        })}
+      {segmented({
+        legend: "単語",
+        name: "card-filter",
+        options: CardFilters.map((filter) => ({ value: filter, label: CardFilterLabels[filter] })),
+        checked: parseCardFilter(null),
+      })}
+      <p data-count class="mb-2 text-sm text-neutral-500" />
+      <div class="grid gap-2">
+        <button type="button" data-start="first" class={StartButton}>
+          最初から
+        </button>
+        <button type="button" data-start="resume" hidden class={StartButton}>
+          続きから
+        </button>
       </div>
     </dialog>
   );
