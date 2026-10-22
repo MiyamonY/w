@@ -5,6 +5,7 @@
 }
 
 @custom-variant flipped (.flipped &);
+@custom-variant pip (#deck[data-pip] &);
 @custom-variant swap-out-next (.htmx-swapping[data-dir="next"] &);
 @custom-variant swap-out-prev (.htmx-swapping[data-dir="prev"] &);
 @custom-variant swap-in-next (#deck[data-dir="next"] &.htmx-added);

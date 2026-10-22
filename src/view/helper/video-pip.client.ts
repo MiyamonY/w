@@ -11,6 +11,7 @@ type Options = {
   root: HTMLElement;
   capture: () => HTMLElement | null;
   controls: VideoPipControls;
+  onClose?: () => void;
 };
 
 const PixelRatio = 2;
@@ -35,7 +36,7 @@ const loadImage = (src: string) =>
 
 // root 内の変化が落ち着くたびに capture() の要素を画像にして canvas に描き、その映像を動画の小窓に出す
 export const openVideoPip = async (options: Options) => {
-  const { root, capture, controls } = options;
+  const { root, capture, controls, onClose } = options;
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
   if (!context) return;
@@ -86,6 +87,7 @@ export const openVideoPip = async (options: Options) => {
   video.srcObject = stream;
 
   const cleanup = () => {
+    onClose?.();
     observer.disconnect();
     clearTimeout(timer);
     for (const [action] of actions) navigator.mediaSession?.setActionHandler(action, null);

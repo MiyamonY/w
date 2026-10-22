@@ -1,6 +1,7 @@
 import type { CardFilter, Word } from "../../../backend/db";
 import { audioUrl } from "../../helper/audio-url";
 import { formatSourceNumbers } from "../../helper/source-numbers";
+import { CardProgressBar } from "../card-progress-bar";
 import { Examples } from "../examples";
 import { FavoriteButton } from "../favorite-button";
 import { SpeakButton } from "../speak-button";
@@ -51,6 +52,7 @@ export const Card = (props: Props) => {
               ))}
             </ul>
           )}
+          <CardProgressBar />
         </div>
         <div
           data-face="back"
@@ -68,6 +70,7 @@ export const Card = (props: Props) => {
           <WordImage imageKey={word.image_key} />
           <div class="text-3xl font-semibold">{word.meaning}</div>
           {word.examples.length > 0 && <Examples examples={word.examples} />}
+          <CardProgressBar />
         </div>
       </div>
     </article>

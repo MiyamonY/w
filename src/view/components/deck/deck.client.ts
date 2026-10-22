@@ -115,7 +115,11 @@ const openDocumentPip = async (
     const url = poster?.getAttribute("hx-post");
     if (poster && url) htmx.ajax("post", url, { target: poster, swap: "outerHTML" });
   });
-  pipWindow.addEventListener("pagehide", () => placeholder.replaceWith(deck));
+  deck.dataset.pip = "";
+  pipWindow.addEventListener("pagehide", () => {
+    delete deck.dataset.pip;
+    placeholder.replaceWith(deck);
+  });
 };
 
 // パソコンの Chrome / Edge はカードの要素ごと小窓に移し、それ以外（Android など）はカードを画像にした動画を小窓に出す
@@ -134,7 +138,15 @@ const setupPictureInPicture = (
       if (pip.window) pip.window.close();
       else openDocumentPip(pip, deck, onKeydown);
     } else if (isVideoPipOpen()) closeVideoPip();
-    else openVideoPip({ root: deck, capture: visibleFace, controls });
+    else {
+      deck.dataset.pip = "";
+      openVideoPip({
+        root: deck,
+        capture: visibleFace,
+        controls,
+        onClose: () => delete deck.dataset.pip,
+      });
+    }
   });
 };
 
@@ -282,6 +294,10 @@ const setupDeck = (deck: HTMLElement) => {
       if (document.activeElement !== positionInput) positionInput.value = position;
     }
     if (positionTotal) positionTotal.textContent = `/ ${total}`;
+    const percent = `${Math.round(((step + 1) / sequence.length) * 100)}%`;
+    for (const bar of c.querySelectorAll<HTMLElement>("[data-progress-bar]")) {
+      bar.style.width = percent;
+    }
   };
 
   const loadCard = (index: number, dir: Dir) => {
