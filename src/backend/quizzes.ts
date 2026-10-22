@@ -4,7 +4,7 @@ import type { CardFilter } from "./db";
 import { CardFilterSchema, coercedInt, coercedLiteral } from "./paging";
 
 export const QuizQuestionCounts = [10, 20, 30, 50] as const;
-export const DefaultQuizQuestionCount = 10;
+export const DefaultQuizQuestionCount = 20;
 
 export const QuizRequestSchema = z.object({
   count: coercedLiteral(QuizQuestionCounts, DefaultQuizQuestionCount),
