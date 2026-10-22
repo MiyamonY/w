@@ -1,4 +1,4 @@
-import { clamp } from "remeda";
+import { clamp, range } from "remeda";
 import type { Paging } from "../../../backend/paging";
 
 type Props = {
@@ -26,6 +26,8 @@ export const Pagination = (props: Props) => {
     );
   const from = total === 0 ? 0 : offset + 1;
   const to = clamp(offset + per, { max: total });
+  const [action, search] = href(page).split("?");
+  const hidden = [...new URLSearchParams(search)].filter(([name]) => name !== "page");
 
   return (
     <nav class="my-4 flex flex-wrap items-center justify-between gap-3 text-sm">
@@ -35,9 +37,34 @@ export const Pagination = (props: Props) => {
       <div class="flex items-center gap-1">
         {link(1, "«", "最初のページ")}
         {link(page - 1, "‹", "前のページ")}
-        <span class="px-2">
-          {page} / {pages}
-        </span>
+        <form
+          method="get"
+          action={action}
+          hx-get={action}
+          hx-trigger="change"
+          class="flex items-center gap-1 px-1"
+        >
+          {hidden.map(([name, value]) => (
+            <input type="hidden" name={name} value={value} />
+          ))}
+          <select
+            name="page"
+            aria-label="ページ番号"
+            class="rounded-md border border-neutral-300 bg-white p-1"
+          >
+            {range(1, pages + 1).map((n) => (
+              <option value={String(n)} selected={n === page}>
+                {n}
+              </option>
+            ))}
+          </select>
+          <span>/ {pages}</span>
+          <noscript>
+            <button type="submit" class="rounded-md bg-white px-2 py-1 shadow-sm">
+              移動
+            </button>
+          </noscript>
+        </form>
         {link(page + 1, "›", "次のページ")}
         {link(pages, "»", "最後のページ")}
       </div>
