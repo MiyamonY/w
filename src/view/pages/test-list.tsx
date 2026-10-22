@@ -1,5 +1,6 @@
 import type { Group } from "../../backend/db";
 import type { PassageSummary } from "../../backend/passages";
+import { GroupSummary } from "../components/group-summary";
 import { Layout } from "../components/layout";
 import { MeaningQuizForm } from "../components/meaning-quiz-form";
 import { PageHeader } from "../components/page-header";
@@ -26,6 +27,9 @@ export const TestListPage = (props: Props) => {
           data: startDialogData(group),
         }}
       />
+      <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+        <GroupSummary group={group} />
+      </div>
       <h2 class="mt-6 font-semibold">4択問題</h2>
       <p class="mt-2 text-sm text-neutral-500">英検1級の大問1形式で、空所に入る語を選びます。</p>
       <QuizForm

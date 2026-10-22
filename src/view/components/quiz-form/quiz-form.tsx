@@ -36,7 +36,6 @@ export const QuizForm = (props: Props) => {
             お気に入りから出題
           </label>
         )}
-        <span class="text-sm text-neutral-500">問題のある単語 {questionCount} 語</span>
       </div>
       <div>
         <button

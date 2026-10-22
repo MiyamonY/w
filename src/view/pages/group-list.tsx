@@ -1,4 +1,5 @@
 import type { Group } from "../../backend/db";
+import { GroupSummary } from "../components/group-summary";
 import { Layout } from "../components/layout";
 import { PageHeader } from "../components/page-header";
 import { StartDialog } from "../components/start-dialog";
@@ -32,13 +33,7 @@ export const GroupList = (props: Props) => {
         <ul class="my-4 grid gap-3">
           {groups.map((g) => (
             <li class="grid gap-3 rounded-xl bg-white p-4 shadow-sm">
-              <div class="grid grid-cols-[1fr_auto] gap-1">
-                <span class="text-lg font-semibold">{g.name}</span>
-                <span class="text-sm text-neutral-500">{g.word_count} 語</span>
-                {g.description && (
-                  <span class="col-span-full text-sm text-neutral-500">{g.description}</span>
-                )}
-              </div>
+              <GroupSummary group={g} />
               <div class="grid grid-cols-3 gap-2 text-sm font-semibold">
                 <a href={`/groups/${g.id}?start=0`} {...startDialogData(g)} class={Action}>
                   カード
