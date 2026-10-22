@@ -13,6 +13,7 @@ import {
   storeProgress,
 } from "../../helper/card-progress.client";
 import { type AudioMode, AudioModeStorageKey, parseAudioMode } from "../../helper/audio-mode";
+import { DeckPlayingEvent } from "../../helper/deck-playing-event";
 import { parsePlayOrder } from "../../helper/play-order";
 import {
   closeVideoPip,
@@ -224,6 +225,7 @@ const setupDeck = (deck: HTMLElement) => {
     if ("mediaSession" in navigator) {
       navigator.mediaSession.playbackState = playing ? "playing" : "paused";
     }
+    document.dispatchEvent(new CustomEvent(DeckPlayingEvent, { detail: playing }));
     if (playing) run();
     else stop();
   };

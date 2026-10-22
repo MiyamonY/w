@@ -1,3 +1,5 @@
+import { DeckPlayingEvent } from "../../helper/deck-playing-event";
+
 const elapsed = document.querySelector<HTMLTimeElement>("#elapsed-time");
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -10,11 +12,27 @@ const format = (totalSeconds: number) => {
 };
 
 if (elapsed) {
-  const startedAt = Date.now();
+  let accumulatedMs = 0;
+  let startedAt: number | null = null;
+  let timer: ReturnType<typeof setInterval> | undefined;
+
   const update = () => {
-    const totalSeconds = Math.floor((Date.now() - startedAt) / 1000);
+    const runningMs = startedAt === null ? 0 : Date.now() - startedAt;
+    const totalSeconds = Math.floor((accumulatedMs + runningMs) / 1000);
     elapsed.textContent = format(totalSeconds);
     elapsed.dateTime = `PT${totalSeconds}S`;
   };
-  setInterval(update, 1000);
+
+  document.addEventListener(DeckPlayingEvent, (e) => {
+    const playing = (e as CustomEvent<boolean>).detail;
+    if (playing && startedAt === null) {
+      startedAt = Date.now();
+      timer = setInterval(update, 1000);
+    } else if (!playing && startedAt !== null) {
+      accumulatedMs += Date.now() - startedAt;
+      startedAt = null;
+      clearInterval(timer);
+    }
+    update();
+  });
 }
