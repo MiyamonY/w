@@ -7,7 +7,6 @@ import { SpeakButton } from "../speak-button";
 
 type Props = {
   words: WordWithGroups[];
-  cardHref?: (index: number) => string;
   currentGroupId?: number;
 };
 
@@ -19,7 +18,7 @@ const Revealable = "invisible group-data-[open]/word:visible";
 const SubCell = "block pt-1.5 md:table-cell md:px-3 md:pt-0 md:pb-2";
 
 export const WordTable = (props: Props) => {
-  const { words, cardHref, currentGroupId } = props;
+  const { words, currentGroupId } = props;
   if (words.length === 0) return <p class="text-sm text-neutral-500">単語がありません。</p>;
   return (
     <table class="block w-full text-sm md:table md:overflow-hidden md:rounded-xl md:bg-white md:shadow-sm">
@@ -32,7 +31,7 @@ export const WordTable = (props: Props) => {
           <th class={Head}>例文</th>
         </tr>
       </thead>
-      {words.map((w, i) => {
+      {words.map((w) => {
         const groups = w.groups.filter((g) => g.id !== currentGroupId);
         return (
           <tbody
@@ -54,20 +53,16 @@ export const WordTable = (props: Props) => {
                 )}
               </td>
               <td class={`${Cell} text-base font-semibold md:text-sm md:whitespace-nowrap`}>
-                {cardHref ? (
-                  <a href={cardHref(i)} class="underline">
-                    {w.term}
-                  </a>
-                ) : (
-                  w.term
-                )}
+                {w.term}
                 <SpeakButton audioKey={w.audio_key} label="音声を再生" />
                 <FavoriteButton wordId={w.id} favorite={w.favorite} />
                 {w.ipa && <div class="text-sm font-normal text-neutral-500">/{w.ipa}/</div>}
               </td>
               <td class={`${Cell} text-neutral-800 ${Revealable}`}>{w.meaning}</td>
               <td class={`${Cell} pt-1.5 md:pt-2.5`}>
-                {w.examples.length > 0 && <Examples examples={w.examples} revealable />}
+                {w.examples.length > 0 && (
+                  <Examples examples={w.examples} revealable showSource={false} />
+                )}
               </td>
             </tr>
             {groups.length > 0 && (

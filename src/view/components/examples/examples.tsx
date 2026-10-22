@@ -5,12 +5,13 @@ import { SpeakButton } from "../speak-button";
 type Props = {
   examples: Example[];
   revealable?: boolean;
+  showSource?: boolean;
 };
 
 const Revealable = "invisible group-data-[open]/word:visible";
 
 export const Examples = (props: Props) => {
-  const { examples, revealable = false } = props;
+  const { examples, revealable = false, showSource = true } = props;
   return (
     <ul class="grid w-full gap-2 text-left">
       {examples.map((e) => (
@@ -22,7 +23,7 @@ export const Examples = (props: Props) => {
                 {e.translation}
               </div>
             )}
-            {e.source_title && (
+            {showSource && e.source_title && (
               <div class="text-xs text-neutral-400">
                 出典:{" "}
                 {e.source_url ? (
