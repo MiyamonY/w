@@ -14,14 +14,27 @@ import {
 } from "../../helper/card-progress.client";
 import { type AudioMode, AudioModeStorageKey, parseAudioMode } from "../../helper/audio-mode";
 import { parsePlayOrder } from "../../helper/play-order";
+import {
+  closeVideoPip,
+  isVideoPipOpen,
+  openVideoPip,
+  type VideoPipControls,
+  videoPipSupported,
+} from "../../helper/video-pip.client";
 import { clamp, range, shuffle } from "remeda";
 
 type Dir = "prev" | "next";
 
 const closest = (target: EventTarget | null, selector: string) =>
-  target instanceof Element ? target.closest<HTMLElement>(selector) : null;
+  target && "closest" in target ? (target as Element).closest<HTMLElement>(selector) : null;
 
-const card = () => document.getElementById("card");
+const deckElement = document.getElementById("deck");
+const card = () => deckElement?.querySelector<HTMLElement>("#card") ?? null;
+const visibleFace = () => {
+  const c = card();
+  const face = c?.classList.contains("flipped") ? "back" : "front";
+  return c?.querySelector<HTMLElement>(`[data-face="${face}"]`) ?? null;
+};
 const wordAudio = (c: HTMLElement) => (c.dataset.audio ? [c.dataset.audio] : []);
 const exampleAudios = (c: HTMLElement) =>
   [...c.querySelectorAll<HTMLElement>(".example[data-audio]")].flatMap(
@@ -51,6 +64,76 @@ const keepScreenOn = async (on: boolean) => {
   wakeLock = await navigator.wakeLock.request("screen").catch(() => null);
   wakeLock?.addEventListener("release", () => {
     wakeLock = null;
+  });
+};
+
+type DocumentPictureInPicture = {
+  window: Window | null;
+  requestWindow: (options?: { width?: number; height?: number }) => Promise<Window>;
+};
+
+const PipWidth = 420;
+const PipHeight = 540;
+
+const copyStyles = (target: Document) => {
+  for (const sheet of document.styleSheets) {
+    try {
+      const style = target.createElement("style");
+      style.textContent = [...sheet.cssRules].map((rule) => rule.cssText).join("\n");
+      target.head.append(style);
+    } catch {
+      if (!sheet.href) continue;
+      const link = target.createElement("link");
+      link.rel = "stylesheet";
+      link.href = sheet.href;
+      target.head.append(link);
+    }
+  }
+};
+
+const openDocumentPip = async (
+  pip: DocumentPictureInPicture,
+  deck: HTMLElement,
+  onKeydown: (e: KeyboardEvent) => void,
+) => {
+  const pipWindow = await pip.requestWindow({ width: PipWidth, height: PipHeight });
+  const pipDocument = pipWindow.document;
+  copyStyles(pipDocument);
+  pipDocument.body.className = `${document.body.className} px-3`;
+  const placeholder = document.createElement("p");
+  placeholder.className = "my-6 text-center text-sm text-neutral-500";
+  placeholder.textContent = "小窓で表示しています";
+  deck.before(placeholder);
+  pipDocument.body.append(deck);
+  pipDocument.addEventListener("keydown", onKeydown);
+  // 元の document の外では、speak-button.client.ts の委譲も htmx の hx-post も動かないので、ここで扱う
+  pipDocument.addEventListener("click", (e) => {
+    const src = closest(e.target, ".speak")?.dataset.audio;
+    if (src) playOne(src);
+    const poster = closest(e.target, "[hx-post]");
+    const url = poster?.getAttribute("hx-post");
+    if (poster && url) htmx.ajax("post", url, { target: poster, swap: "outerHTML" });
+  });
+  pipWindow.addEventListener("pagehide", () => placeholder.replaceWith(deck));
+};
+
+// パソコンの Chrome / Edge はカードの要素ごと小窓に移し、それ以外（Android など）はカードを画像にした動画を小窓に出す
+const setupPictureInPicture = (
+  deck: HTMLElement,
+  onKeydown: (e: KeyboardEvent) => void,
+  controls: VideoPipControls,
+) => {
+  const pip = (window as Window & { documentPictureInPicture?: DocumentPictureInPicture })
+    .documentPictureInPicture;
+  const button = document.getElementById("toggle-pip");
+  if (!button || (!pip && !videoPipSupported())) return;
+  button.hidden = false;
+  button.addEventListener("click", () => {
+    if (pip) {
+      if (pip.window) pip.window.close();
+      else openDocumentPip(pip, deck, onKeydown);
+    } else if (isVideoPipOpen()) closeVideoPip();
+    else openVideoPip({ root: deck, capture: visibleFace, controls });
   });
 };
 
@@ -138,6 +221,9 @@ const setupDeck = (deck: HTMLElement) => {
       toggleBtn.ariaLabel = playing ? "一時停止" : "再生";
     }
     keepScreenOn(playing);
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+    }
     if (playing) run();
     else stop();
   };
@@ -255,7 +341,7 @@ const setupDeck = (deck: HTMLElement) => {
   });
   syncPosition();
 
-  document.body.addEventListener("htmx:afterSettle", (e) => {
+  deck.addEventListener("htmx:afterSettle", (e) => {
     if (e.target !== deck) return;
     syncPosition();
     saveProgress();
@@ -276,7 +362,7 @@ const setupDeck = (deck: HTMLElement) => {
     else if (Math.abs(dx) < 10) toggleFlip();
   });
 
-  document.addEventListener("keydown", (e) => {
+  const onKeydown = (e: KeyboardEvent) => {
     if (closest(e.target, "input, select, textarea")) return;
     if (closest(e.target, "button, a") && (e.key === " " || e.key === "Enter")) return;
     if (e.key === "ArrowRight") go("next");
@@ -285,8 +371,15 @@ const setupDeck = (deck: HTMLElement) => {
       e.preventDefault();
       setPlaying(!playing);
     } else if (e.key === "Enter") toggleFlip();
+  };
+  document.addEventListener("keydown", onKeydown);
+
+  setupPictureInPicture(deck, onKeydown, {
+    play: () => setPlaying(true),
+    pause: () => setPlaying(false),
+    prev: () => go("prev"),
+    next: () => go("next"),
   });
 };
 
-const deck = document.getElementById("deck");
-if (deck) setupDeck(deck);
+if (deckElement) setupDeck(deckElement);

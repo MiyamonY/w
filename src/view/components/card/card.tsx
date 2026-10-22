@@ -29,7 +29,7 @@ export const Card = (props: Props) => {
     >
       <div class="relative flex-1 cursor-pointer perspective-[1000px]">
         <FavoriteButton wordId={word.id} favorite={word.favorite} variant="corner" />
-        <div class={`${Face} flipped:-rotate-y-180`}>
+        <div data-face="front" class={`${Face} flipped:-rotate-y-180`}>
           {word.numbers.length > 0 && (
             <div class="absolute top-3 left-4 text-xs text-neutral-400 tabular-nums">
               {formatSourceNumbers(word.numbers)}
@@ -52,7 +52,10 @@ export const Card = (props: Props) => {
             </ul>
           )}
         </div>
-        <div class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}>
+        <div
+          data-face="back"
+          class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}
+        >
           <div class="flex items-center gap-1">
             <div class="text-xl font-medium text-neutral-500">{word.term}</div>
             {word.ipa && <div class="text-neutral-400">/{word.ipa}/</div>}
