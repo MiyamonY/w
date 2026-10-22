@@ -1,0 +1,53 @@
+import type { MeaningQuestion } from "../../../backend/meaning-quizzes";
+import { MeaningQuizQuestion } from "../meaning-quiz-question";
+
+type Props = {
+  questions: MeaningQuestion[];
+};
+
+const NavButton =
+  "cursor-pointer py-4 text-3xl text-blue-700 active:bg-neutral-100 disabled:text-neutral-300";
+
+export const MeaningQuizDeck = (props: Props) => {
+  const { questions } = props;
+  return (
+    <>
+      <div id="meaning-quiz-deck" class="mt-2">
+        {questions.map((q, i) => (
+          <div data-quiz-card hidden={i > 0}>
+            <MeaningQuizQuestion question={q} />
+          </div>
+        ))}
+      </div>
+      <nav class="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white/95 backdrop-blur">
+        <div class="mx-auto grid max-w-140 grid-cols-3 items-center">
+          <button
+            type="button"
+            data-quiz-nav="prev"
+            aria-label="前の問題"
+            disabled
+            class={NavButton}
+          >
+            ‹
+          </button>
+          <span
+            id="meaning-quiz-position"
+            class="text-center text-sm text-neutral-500 tabular-nums"
+          >
+            1 / {questions.length}
+          </span>
+          <button
+            type="button"
+            data-quiz-nav="next"
+            aria-label="次の問題"
+            disabled={questions.length <= 1}
+            class={NavButton}
+          >
+            ›
+          </button>
+        </div>
+      </nav>
+      <div class="h-20" aria-hidden="true" />
+    </>
+  );
+};
