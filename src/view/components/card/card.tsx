@@ -15,7 +15,7 @@ type Props = {
 };
 
 const Face =
-  "absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white p-6 text-center shadow-lg backface-hidden transition-transform duration-400";
+  "absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-neutral-800 p-6 text-center shadow-lg backface-hidden transition-transform duration-400";
 
 export const Card = (props: Props) => {
   const { index, total, word, filter = "all" } = props;
@@ -32,7 +32,7 @@ export const Card = (props: Props) => {
         <FavoriteButton wordId={word.id} favorite={word.favorite} variant="corner" />
         <div data-face="front" class={`${Face} flipped:-rotate-y-180`}>
           {word.numbers.length > 0 && (
-            <div class="absolute top-3 left-4 text-xs text-neutral-400 tabular-nums">
+            <div class="absolute top-3 left-4 text-xs text-neutral-400 dark:text-neutral-500 tabular-nums">
               {formatSourceNumbers(word.numbers)}
             </div>
           )}
@@ -44,9 +44,11 @@ export const Card = (props: Props) => {
               class="cursor-pointer p-1 text-2xl leading-none"
             />
           </div>
-          {word.ipa && <div class="-mt-2 text-lg text-neutral-500">/{word.ipa}/</div>}
+          {word.ipa && (
+            <div class="-mt-2 text-lg text-neutral-500 dark:text-neutral-400">/{word.ipa}/</div>
+          )}
           {word.examples.length > 0 && (
-            <ul class="grid gap-1.5 text-neutral-600">
+            <ul class="grid gap-1.5 text-neutral-600 dark:text-neutral-300">
               {word.examples.map((e) => (
                 <li>{e.sentence}</li>
               ))}
@@ -59,8 +61,10 @@ export const Card = (props: Props) => {
           class={`${Face} justify-center-safe overflow-y-auto rotate-y-180 flipped:rotate-y-0`}
         >
           <div class="flex items-center gap-1">
-            <div class="text-xl font-medium text-neutral-500">{word.term}</div>
-            {word.ipa && <div class="text-neutral-400">/{word.ipa}/</div>}
+            <div class="text-xl font-medium text-neutral-500 dark:text-neutral-400">
+              {word.term}
+            </div>
+            {word.ipa && <div class="text-neutral-400 dark:text-neutral-500">/{word.ipa}/</div>}
             <SpeakButton
               audioKey={word.audio_key}
               label="音声を再生"

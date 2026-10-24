@@ -19,10 +19,11 @@ const SubCell = "block pt-1.5 md:table-cell md:px-3 md:pt-0 md:pb-2";
 
 export const WordTable = (props: Props) => {
   const { words, currentGroupId } = props;
-  if (words.length === 0) return <p class="text-sm text-neutral-500">単語がありません。</p>;
+  if (words.length === 0)
+    return <p class="text-sm text-neutral-500 dark:text-neutral-400">単語がありません。</p>;
   return (
-    <table class="block w-full text-sm md:table md:overflow-hidden md:rounded-xl md:bg-white md:shadow-sm">
-      <thead class="hidden bg-slate-50 text-left whitespace-nowrap text-neutral-500 md:table-header-group">
+    <table class="block w-full text-sm md:table md:overflow-hidden md:rounded-xl md:bg-white dark:md:bg-neutral-800 md:shadow-sm">
+      <thead class="hidden bg-slate-50 dark:bg-neutral-900 text-left whitespace-nowrap text-neutral-500 dark:text-neutral-400 md:table-header-group">
         <tr>
           <th class={`${Head} w-px text-right`}>ID</th>
           <th class={`${Head} w-px`}>No.</th>
@@ -36,14 +37,14 @@ export const WordTable = (props: Props) => {
         return (
           <tbody
             data-word-item
-            class="group/word mb-3 block cursor-pointer rounded-xl bg-white p-3 shadow-sm md:mb-0 md:table-row-group md:rounded-none md:p-0 md:shadow-none"
+            class="group/word mb-3 block cursor-pointer rounded-xl bg-white dark:bg-neutral-800 p-3 shadow-sm md:mb-0 md:table-row-group md:rounded-none md:p-0 md:shadow-none"
           >
-            <tr class="block md:table-row md:border-t md:border-neutral-200">
-              <td class="hidden text-right text-neutral-400 tabular-nums md:table-cell md:px-3 md:py-2.5 md:align-top">
+            <tr class="block md:table-row md:border-t md:border-neutral-200 dark:md:border-neutral-700">
+              <td class="hidden text-right text-neutral-400 dark:text-neutral-500 tabular-nums md:table-cell md:px-3 md:py-2.5 md:align-top">
                 {w.id}
               </td>
               <td
-                class={`${Cell} text-xs text-neutral-400 tabular-nums md:text-sm md:whitespace-nowrap md:text-inherit`}
+                class={`${Cell} text-xs text-neutral-400 dark:text-neutral-500 tabular-nums md:text-sm md:whitespace-nowrap md:text-inherit`}
               >
                 {w.numbers.length > 0 && (
                   <>
@@ -56,9 +57,15 @@ export const WordTable = (props: Props) => {
                 {w.term}
                 <SpeakButton audioKey={w.audio_key} label="音声を再生" />
                 <FavoriteButton wordId={w.id} favorite={w.favorite} />
-                {w.ipa && <div class="text-sm font-normal text-neutral-500">/{w.ipa}/</div>}
+                {w.ipa && (
+                  <div class="text-sm font-normal text-neutral-500 dark:text-neutral-400">
+                    /{w.ipa}/
+                  </div>
+                )}
               </td>
-              <td class={`${Cell} text-neutral-800 ${Revealable}`}>{w.meaning}</td>
+              <td class={`${Cell} text-neutral-800 dark:text-neutral-100 ${Revealable}`}>
+                {w.meaning}
+              </td>
               <td class={`${Cell} pt-1.5 md:pt-2.5`}>
                 {w.examples.length > 0 && (
                   <Examples examples={w.examples} revealable showSource={false} />

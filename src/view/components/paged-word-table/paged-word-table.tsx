@@ -27,7 +27,7 @@ export const PagedWordTable = (props: Props) => {
       hx-push-url="true"
     >
       {group && (
-        <div class="my-4 rounded-xl bg-white p-4 shadow-sm">
+        <div class="my-4 rounded-xl bg-white dark:bg-neutral-800 p-4 shadow-sm">
           <GroupSummary group={group} />
         </div>
       )}

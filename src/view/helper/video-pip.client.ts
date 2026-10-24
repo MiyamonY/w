@@ -47,9 +47,10 @@ export const openVideoPip = async (options: Options) => {
     if (!element) return;
     const width = element.offsetWidth * PixelRatio;
     const height = element.offsetHeight * PixelRatio;
+    const background = getComputedStyle(element).backgroundColor;
     const svg = await toSvg(element, {
       skipFonts: true,
-      backgroundColor: "#ffffff",
+      backgroundColor: background,
       style: { position: "static", transform: "none", rotate: "none", translate: "none" },
     });
     const image = await loadImage(svg);
@@ -57,7 +58,7 @@ export const openVideoPip = async (options: Options) => {
       canvas.width = width;
       canvas.height = height;
     }
-    context.fillStyle = "#ffffff";
+    context.fillStyle = background;
     context.fillRect(0, 0, width, height);
     context.drawImage(image, 0, 0, width, height);
     track?.requestFrame();

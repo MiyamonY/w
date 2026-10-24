@@ -21,16 +21,16 @@ export const TestPage = (props: Props) => {
       <div class="mt-4">
         <Passage passage={passage} />
       </div>
-      <h2 class="mt-6 text-neutral-500">出題した単語</h2>
+      <h2 class="mt-6 text-neutral-500 dark:text-neutral-400">出題した単語</h2>
       <ul class="mt-2 grid gap-2">
         {passage.words.map((w) => (
-          <li class="rounded-xl bg-white p-3 shadow-sm">
+          <li class="rounded-xl bg-white dark:bg-neutral-800 p-3 shadow-sm">
             <div class="flex items-center gap-1">
               <span class="font-semibold">{w.term}</span>
               <SpeakButton audioKey={w.audio_key} label="音声を再生" />
               <FavoriteButton wordId={w.id} favorite={w.favorite} />
             </div>
-            {w.ipa && <div class="text-sm text-neutral-500">/{w.ipa}/</div>}
+            {w.ipa && <div class="text-sm text-neutral-500 dark:text-neutral-400">/{w.ipa}/</div>}
             <div class="text-sm">{w.meaning}</div>
           </li>
         ))}

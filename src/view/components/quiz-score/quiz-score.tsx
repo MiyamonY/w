@@ -7,7 +7,7 @@ export const QuizScore = (props: Props) => {
   return (
     <div
       id="quiz-score"
-      class="sticky top-0 z-10 -mx-4 mt-4 bg-neutral-100/90 px-4 py-2 text-sm backdrop-blur"
+      class="sticky top-0 z-10 -mx-4 mt-4 bg-neutral-100/90 dark:bg-neutral-800/90 px-4 py-2 text-sm backdrop-blur"
     >
       正解{" "}
       <span data-score="correct" class="font-semibold">

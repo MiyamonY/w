@@ -12,7 +12,9 @@ export const GroupSummary = (props: Props) => {
       <span class="text-lg font-semibold">{group.name}</span>
       <GroupCounts group={group} />
       {group.description && (
-        <span class="col-span-full text-sm text-neutral-500">{group.description}</span>
+        <span class="col-span-full text-sm text-neutral-500 dark:text-neutral-400">
+          {group.description}
+        </span>
       )}
     </div>
   );

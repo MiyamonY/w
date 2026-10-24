@@ -17,12 +17,15 @@ export const TestForm = (props: Props) => {
       hx-swap="outerHTML"
       hx-indicator="#generating"
       hx-disabled-elt="find button"
-      class="mt-4 grid gap-3 rounded-xl bg-white p-5 shadow-sm"
+      class="mt-4 grid gap-3 rounded-xl bg-white dark:bg-neutral-800 p-5 shadow-sm"
     >
       <div class="flex flex-wrap items-center gap-4">
         <label class="flex items-center gap-1.5">
           出題数
-          <select name="count" class="rounded-md border border-neutral-300 bg-white p-1">
+          <select
+            name="count"
+            class="rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 p-1"
+          >
             {TestWordCounts.map((n) => (
               <option value={String(n)} selected={n === DefaultTestWordCount}>
                 {n} 語
@@ -40,15 +43,15 @@ export const TestForm = (props: Props) => {
       <div class="flex items-center gap-3">
         <button
           type="submit"
-          class="cursor-pointer rounded-full bg-blue-50 px-6 py-2.5 text-blue-700 disabled:opacity-50"
+          class="cursor-pointer rounded-full bg-blue-50 dark:bg-blue-950 px-6 py-2.5 text-blue-700 dark:text-blue-400 disabled:opacity-50"
         >
           開始
         </button>
-        <span id="generating" class="htmx-indicator text-sm text-neutral-500">
+        <span id="generating" class="htmx-indicator text-sm text-neutral-500 dark:text-neutral-400">
           生成しています（10〜30秒ほどかかります）…
         </span>
       </div>
-      {error && <p class="text-sm text-red-700">{error}</p>}
+      {error && <p class="text-sm text-red-700 dark:text-red-400">{error}</p>}
     </form>
   );
 };

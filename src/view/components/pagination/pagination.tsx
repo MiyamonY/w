@@ -15,12 +15,15 @@ export const Pagination = (props: Props) => {
         href={href(target)}
         hx-get={href(target)}
         aria-label={ariaLabel}
-        class="min-w-8 rounded-md bg-white px-2 py-1 text-center text-blue-700 shadow-sm"
+        class="min-w-8 rounded-md bg-white dark:bg-neutral-800 px-2 py-1 text-center text-blue-700 dark:text-blue-400 shadow-sm"
       >
         {label}
       </a>
     ) : (
-      <span class="min-w-8 px-2 py-1 text-center text-neutral-300" aria-hidden="true">
+      <span
+        class="min-w-8 px-2 py-1 text-center text-neutral-300 dark:text-neutral-600"
+        aria-hidden="true"
+      >
         {label}
       </span>
     );
@@ -31,7 +34,7 @@ export const Pagination = (props: Props) => {
 
   return (
     <nav class="my-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-      <span class="text-neutral-500">
+      <span class="text-neutral-500 dark:text-neutral-400">
         {total} 語中 {from}〜{to}
       </span>
       <div class="flex items-center gap-1">
@@ -50,7 +53,7 @@ export const Pagination = (props: Props) => {
           <select
             name="page"
             aria-label="ページ番号"
-            class="rounded-md border border-neutral-300 bg-white p-1"
+            class="rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 p-1"
           >
             {range(1, pages + 1).map((n) => (
               <option value={String(n)} selected={n === page}>
@@ -60,7 +63,10 @@ export const Pagination = (props: Props) => {
           </select>
           <span>/ {pages}</span>
           <noscript>
-            <button type="submit" class="rounded-md bg-white px-2 py-1 shadow-sm">
+            <button
+              type="submit"
+              class="rounded-md bg-white dark:bg-neutral-800 px-2 py-1 shadow-sm"
+            >
               移動
             </button>
           </noscript>

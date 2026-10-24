@@ -13,7 +13,7 @@ export const GroupTags = (props: Props) => {
       {groups.map((g) => (
         <a
           href={wordsUrl({ group: g.id })}
-          class="whitespace-nowrap rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700"
+          class="whitespace-nowrap rounded-full bg-blue-50 dark:bg-blue-950 px-2 py-0.5 text-xs text-blue-700 dark:text-blue-400"
         >
           {g.name}
         </a>

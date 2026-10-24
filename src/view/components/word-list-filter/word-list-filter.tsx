@@ -8,7 +8,8 @@ type Props = {
   per: number;
 };
 
-const Select = "rounded-md border border-neutral-300 bg-white p-1";
+const Select =
+  "rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 p-1";
 
 export const WordListFilter = (props: Props) => {
   const { groups, groupId, filter, per } = props;
@@ -48,7 +49,7 @@ export const WordListFilter = (props: Props) => {
         </select>
       </label>
       <noscript>
-        <button type="submit" class="rounded-md bg-white px-2 py-1 shadow-sm">
+        <button type="submit" class="rounded-md bg-white dark:bg-neutral-800 px-2 py-1 shadow-sm">
           表示
         </button>
       </noscript>

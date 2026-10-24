@@ -12,7 +12,7 @@ export const Passage = (props: Props) => {
     <article
       id="passage"
       data-meaning="off"
-      class="group/passage rounded-xl bg-white p-5 shadow-sm"
+      class="group/passage rounded-xl bg-white dark:bg-neutral-800 p-5 shadow-sm"
     >
       <div class="mb-4 flex items-start justify-between gap-3">
         <h2 class="text-lg font-bold">{passage.title}</h2>
@@ -33,10 +33,10 @@ export const Passage = (props: Props) => {
             return (
               <span class="group/word" data-word>
                 <ruby class="cursor-pointer">
-                  <strong class="text-blue-800 underline decoration-dotted underline-offset-4">
+                  <strong class="text-blue-800 dark:text-blue-300 underline decoration-dotted underline-offset-4">
                     {segment.form}
                   </strong>
-                  <rt class="invisible text-[0.65em] font-normal text-amber-700 group-data-[open]/word:visible group-data-[meaning=on]/passage:visible">
+                  <rt class="invisible text-[0.65em] font-normal text-amber-700 dark:text-amber-400 group-data-[open]/word:visible group-data-[meaning=on]/passage:visible">
                     {shortMeaning(word.meaning)}
                   </rt>
                 </ruby>

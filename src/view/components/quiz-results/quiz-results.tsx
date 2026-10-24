@@ -12,9 +12,13 @@ export const QuizResults = (props: Props) => {
       class="font-mono tracking-wider whitespace-nowrap"
       title={`${attempts} 回中 ${corrects} 回正解`}
     >
-      {attempts > recent.length && <span class="text-neutral-400">…</span>}
+      {attempts > recent.length && <span class="text-neutral-400 dark:text-neutral-500">…</span>}
       {recent.map((correct) =>
-        correct ? <span class="text-green-700">o</span> : <span class="text-red-600">x</span>,
+        correct ? (
+          <span class="text-green-700 dark:text-green-400">o</span>
+        ) : (
+          <span class="text-red-600 dark:text-red-400">x</span>
+        ),
       )}
     </span>
   );

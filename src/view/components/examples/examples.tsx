@@ -17,21 +17,23 @@ export const Examples = (props: Props) => {
       {examples.map((e) => (
         <li class="example flex items-start gap-2" data-audio={audioUrl(e.audio_key)}>
           <div class="flex-1">
-            <div class="text-neutral-700">{e.sentence}</div>
+            <div class="text-neutral-700 dark:text-neutral-200">{e.sentence}</div>
             {e.translation && (
-              <div class={`text-sm text-neutral-500 ${revealable ? Revealable : ""}`}>
+              <div
+                class={`text-sm text-neutral-500 dark:text-neutral-400 ${revealable ? Revealable : ""}`}
+              >
                 {e.translation}
               </div>
             )}
             {showSource && e.source_title && (
-              <div class="text-xs text-neutral-400">
+              <div class="text-xs text-neutral-400 dark:text-neutral-500">
                 出典:{" "}
                 {e.source_url ? (
                   <a
                     href={e.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-blue-700"
+                    class="text-blue-700 dark:text-blue-400"
                   >
                     {e.source_title}
                   </a>

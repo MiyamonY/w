@@ -102,7 +102,7 @@ const openDocumentPip = async (
   copyStyles(pipDocument);
   pipDocument.body.className = `${document.body.className} px-3`;
   const placeholder = document.createElement("p");
-  placeholder.className = "my-6 text-center text-sm text-neutral-500";
+  placeholder.className = "my-6 text-center text-sm text-neutral-500 dark:text-neutral-400";
   placeholder.textContent = "小窓で表示しています";
   deck.before(placeholder);
   pipDocument.body.append(deck);

@@ -23,9 +23,9 @@ export const CardPosition = (props: Props) => {
         max={String(total)}
         value={String(position)}
         aria-label="何枚目か"
-        class="w-20 rounded-md border border-neutral-300 bg-white p-1 text-right tabular-nums"
+        class="w-20 rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 p-1 text-right tabular-nums"
       />
-      <span id="card-position-total" class="text-neutral-500 tabular-nums">
+      <span id="card-position-total" class="text-neutral-500 dark:text-neutral-400 tabular-nums">
         / {total}
       </span>
     </div>

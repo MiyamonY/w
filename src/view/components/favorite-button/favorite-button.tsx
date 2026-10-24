@@ -17,7 +17,7 @@ export const FavoriteButton = (props: Props) => {
   return (
     <button
       type="button"
-      class={`${VariantClass[variant]} ${favorite ? "text-amber-500" : "text-neutral-400"}`}
+      class={`${VariantClass[variant]} ${favorite ? "text-amber-500" : "text-neutral-400 dark:text-neutral-500"}`}
       hx-post={`/words/${wordId}/favorite?variant=${variant}`}
       hx-target="this"
       hx-swap="outerHTML"
