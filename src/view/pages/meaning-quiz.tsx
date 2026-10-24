@@ -16,7 +16,7 @@ export const MeaningQuizPage = (props: Props) => {
     <Layout title={`${group.name} の意味の4択 - 単語帳`}>
       <PageHeader title={`${group.name} の意味の4択`} backHref={`/groups/${group.id}/tests`} />
       <QuizScore total={questions.length} />
-      <MeaningQuizDeck questions={questions} />
+      <MeaningQuizDeck questions={questions} finishHref={`/groups/${group.id}/tests`} />
     </Layout>
   );
 };

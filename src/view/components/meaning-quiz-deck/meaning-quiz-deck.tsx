@@ -3,13 +3,15 @@ import { MeaningQuizQuestion } from "../meaning-quiz-question";
 
 type Props = {
   questions: MeaningQuestion[];
+  finishHref: string;
 };
 
 const NavButton =
   "cursor-pointer py-4 text-3xl text-blue-700 dark:text-blue-400 active:bg-neutral-100 dark:active:bg-neutral-700 disabled:text-neutral-300 dark:disabled:text-neutral-600";
 
 export const MeaningQuizDeck = (props: Props) => {
-  const { questions } = props;
+  const { questions, finishHref } = props;
+  const last = questions.length <= 1;
   return (
     <>
       <div id="meaning-quiz-deck" class="mt-2">
@@ -39,11 +41,16 @@ export const MeaningQuizDeck = (props: Props) => {
           <button
             type="button"
             data-quiz-nav="next"
-            aria-label="次の問題"
-            disabled={questions.length <= 1}
+            data-finish-href={finishHref}
+            aria-label={last ? "終了" : "次の問題"}
             class={NavButton}
           >
-            ›
+            <span data-nav-label="next" hidden={last}>
+              ›
+            </span>
+            <span data-nav-label="finish" hidden={!last} class="text-base font-medium">
+              終了
+            </span>
           </button>
         </div>
       </nav>
