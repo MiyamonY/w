@@ -57,7 +57,7 @@ export const MeaningQuizQuestion = (props: Props) => {
               }
               hx-target={`#meaning-question-${question.word_id}`}
               hx-swap="outerHTML"
-              class={`flex h-full w-full items-baseline gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-left ${choiceTone(question, i)}`}
+              class={`flex h-full w-full items-baseline gap-2 rounded-lg border border-neutral-200 px-3 py-4 text-left ${choiceTone(question, i)}`}
             >
               <span class="text-neutral-400">{i + 1}</span>
               <span>
