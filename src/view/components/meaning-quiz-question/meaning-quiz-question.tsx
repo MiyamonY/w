@@ -45,7 +45,7 @@ export const MeaningQuizQuestion = (props: Props) => {
         {answered && <FavoriteButton wordId={question.word_id} favorite={question.favorite} />}
       </div>
       {question.ipa && <div class="text-sm text-neutral-500">/{question.ipa}/</div>}
-      <ol class="mt-3 grid gap-2 sm:grid-cols-2">
+      <ol class="mt-3 grid grid-cols-2 gap-2">
         {question.choices.map((choice, i) => (
           <li>
             <button
@@ -57,7 +57,7 @@ export const MeaningQuizQuestion = (props: Props) => {
               }
               hx-target={`#meaning-question-${question.word_id}`}
               hx-swap="outerHTML"
-              class={`flex w-full items-baseline gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-left ${choiceTone(question, i)}`}
+              class={`flex h-full w-full items-baseline gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-left ${choiceTone(question, i)}`}
             >
               <span class="text-neutral-400">{i + 1}</span>
               <span>
