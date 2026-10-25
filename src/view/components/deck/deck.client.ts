@@ -13,6 +13,7 @@ import {
   storeProgress,
 } from "../../helper/card-progress.client";
 import { type AudioMode, AudioModeStorageKey, parseAudioMode } from "../../helper/audio-mode";
+import { cardUrl } from "../../helper/card-url";
 import { DeckPlayingEvent } from "../../helper/deck-playing-event";
 import { parsePlayOrder } from "../../helper/play-order";
 import {
@@ -155,11 +156,6 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const setupDeck = (deck: HTMLElement) => {
   const groupId = deck.dataset.groupId ?? "";
   const wordIds: number[] = JSON.parse(deck.dataset.wordIds ?? "[]");
-  const cardUrl = (filter: Filter, index: number) => {
-    const params = new URLSearchParams({ index: String(index), total: String(wordIds.length) });
-    if (filter === "favorites") params.set("only", "favorites");
-    return `/groups/${groupId}/cards/${wordIds[index]}?${params}`;
-  };
   const frontMs = Number(deck.dataset.frontMs);
   const backMs = Number(deck.dataset.backMs);
   const toggleBtn = document.getElementById("toggle-play");
@@ -267,9 +263,11 @@ const setupDeck = (deck: HTMLElement) => {
   });
 
   const initial = card();
+  // オフラインでは別の start で保存したページが返ることがあるので、URL の start を正とする
+  const start = Number(new URL(location.href).searchParams.get("start")) % wordIds.length;
   if (initial) {
     const saved = loadProgress(groupId, currentFilter(initial), Number(initial.dataset.total));
-    if (saved && saved.sequence[saved.step] === Number(initial.dataset.index)) {
+    if (saved && saved.sequence[saved.step] === start) {
       ({ order, step, sequence } = saved);
     }
   }
@@ -304,7 +302,7 @@ const setupDeck = (deck: HTMLElement) => {
     const c = card();
     if (!c) return;
     deck.dataset.dir = dir;
-    htmx.ajax("get", cardUrl(currentFilter(c), index), {
+    htmx.ajax("get", cardUrl({ groupId, wordIds, filter: currentFilter(c), index }), {
       target: deck,
       swap: "innerHTML swap:250ms",
     });
@@ -366,6 +364,10 @@ const setupDeck = (deck: HTMLElement) => {
     if (playing) run();
     else playCurrentFace();
   });
+
+  if (initial && Number.isInteger(start) && start !== Number(initial.dataset.index)) {
+    loadCard(start, "next");
+  }
 
   let startX: number | null = null;
   deck.addEventListener("pointerdown", (e) => {
