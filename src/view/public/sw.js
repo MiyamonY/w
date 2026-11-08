@@ -68,7 +68,9 @@ const fromNetwork = async (event) => {
     if (res.ok && res.type === "basic") event.waitUntil(cache.put(request, res.clone()));
     return res;
   } catch (error) {
-    const cached = await cache.match(request);
+    // JS・CSS は読み込み方で Origin などのヘッダーが変わるが、中身は同じなので Vary を見ない
+    const ignoreVary = request.destination === "script" || request.destination === "style";
+    const cached = await cache.match(request, { ignoreVary });
     if (cached) return cached;
     if (request.mode !== "navigate") throw error;
     return (await similarPage(cache, request)) ?? offlinePage();

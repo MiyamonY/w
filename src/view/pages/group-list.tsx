@@ -1,6 +1,7 @@
 import type { Group } from "../../backend/db";
 import { GroupSummary } from "../components/group-summary";
 import { Layout } from "../components/layout";
+import { OfflineSave } from "../components/offline-save";
 import { PageHeader } from "../components/page-header";
 import { StartDialog } from "../components/start-dialog";
 import { startDialogData } from "../helper/start-dialog-data";
@@ -45,6 +46,7 @@ export const GroupList = (props: Props) => {
                   テスト
                 </a>
               </div>
+              <OfflineSave group={g} />
             </li>
           ))}
         </ul>
