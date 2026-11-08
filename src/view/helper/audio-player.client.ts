@@ -13,16 +13,41 @@ const fallback = new Audio();
 applyRate(fallback);
 traceAudio(fallback);
 
-// 先読みした音声（元の URL → 読み込み済みのプレーヤー）。src を切り替えると端末によっては
-// 読み込みと再生の準備で間が空くので、カードの音声ごとにプレーヤーを用意しておく
-const preloaded = new Map<string, HTMLAudioElement>();
+// Bluetooth のイヤホンは出力の流れを作るたびに 2 秒ほど溜めてから鳴らすので、<audio> ごとに出力すると
+// 単語と例文の間がその分空く。先読みした音声は 1 本の AudioContext に通し、出力の流れを使い回す。
+// 完全な無音だとブラウザが出力を止めるので、聞こえない大きさ（-80dB）の一定の値も流しておく
+const KeepAliveLevel = 0.0001;
+let output: AudioContext | null = null;
+let keepOn = false;
+
+const outputContext = () => {
+  if (!output) {
+    output = new AudioContext();
+    const source = new ConstantSourceNode(output, { offset: KeepAliveLevel });
+    source.connect(output.destination);
+    source.start();
+  }
+  return output;
+};
+
+const resumeOutput = () => {
+  const context = outputContext();
+  void context.resume().then(() => {
+    traceNote(`output ${context.state} out=${Math.round(context.outputLatency * 1000)}ms`);
+  });
+};
+
+// 先読みした音声（元の URL → 読み込み済みのプレーヤーと、AudioContext への入口）
+type Preloaded = { audio: HTMLAudioElement; node: MediaElementAudioSourceNode };
+const preloaded = new Map<string, Preloaded>();
 
 let current = fallback;
 let finish: (() => void) | null = null;
 
 export const setPlaybackRate = (value: number) => {
   rate = value;
-  for (const audio of [fallback, ...preloaded.values()]) applyRate(audio);
+  applyRate(fallback);
+  for (const { audio } of preloaded.values()) applyRate(audio);
   localStorage.setItem(PlaybackRateStorageKey, String(rate));
 };
 
@@ -30,10 +55,10 @@ export const currentPlaybackRate = () => rate;
 
 // srcs を先に読み込み、srcs に無いものは捨てる
 export const preloadAudio = (srcs: string[]) => {
-  for (const [src, audio] of preloaded) {
-    if (srcs.includes(src)) continue;
+  for (const [src, { audio, node }] of preloaded) {
+    if (srcs.includes(src) || audio === current) continue;
     preloaded.delete(src);
-    if (audio === current) continue;
+    node.disconnect();
     audio.removeAttribute("src");
     audio.load();
   }
@@ -44,44 +69,35 @@ export const preloadAudio = (srcs: string[]) => {
     applyRate(audio);
     traceAudio(audio);
     audio.src = src;
-    preloaded.set(src, audio);
+    const context = outputContext();
+    const node = context.createMediaElementSource(audio);
+    node.connect(context.destination);
+    preloaded.set(src, { audio, node });
   }
 };
 
-// Bluetooth のイヤホンは出力が途切れると接続を休ませ、次の音声の前につなぎ直しで 1〜2 秒待たせる。
-// 再生中はほぼ無音（-80dB）の出力を流し続け、単語と例文の間でつなぎ直しが起きないようにする
-const KeepAliveLevel = 0.0001;
-let keepAlive: AudioContext | null = null;
-
+// 出力を続けるかどうか。自動再生の間は続け、止めたら休ませる
 export const keepAudioOutput = (on: boolean) => {
-  if (!on) {
-    void keepAlive?.suspend();
-    return;
-  }
-  if (!keepAlive) {
-    keepAlive = new AudioContext();
-    // 完全な無音だとブラウザが出力を止めるので、聞こえない大きさの一定の値を流す
-    const source = new ConstantSourceNode(keepAlive, { offset: KeepAliveLevel });
-    source.connect(keepAlive.destination);
-    source.start();
-  }
-  void keepAlive.resume().then(() => {
-    const latency = Math.round((keepAlive?.outputLatency ?? 0) * 1000);
-    traceNote(`keepAlive ${keepAlive?.state} out=${latency}ms`);
-  });
+  keepOn = on;
+  if (on) resumeOutput();
+  else void output?.suspend();
 };
 
 export const playOne = (src: string): Promise<void> => {
   current.pause();
   finish?.();
-  const audio = preloaded.get(src) ?? fallback;
+  const entry = preloaded.get(src);
+  const audio = entry?.audio ?? fallback;
   current = audio;
+  // AudioContext に通した音声は、AudioContext が止まっていると聞こえない
+  if (entry) resumeOutput();
   return new Promise((resolve) => {
     const done = () => {
       if (finish !== done) return;
       finish = null;
       audio.removeEventListener("ended", done);
       audio.removeEventListener("error", done);
+      if (entry && !keepOn) void output?.suspend();
       resolve();
     };
     finish = done;
