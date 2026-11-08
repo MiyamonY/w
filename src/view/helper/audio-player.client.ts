@@ -1,3 +1,4 @@
+import { traceAudio, traceNote, tracePlay } from "./audio-debug.client";
 import { parsePlaybackRate, PlaybackRateStorageKey } from "./playback-rate";
 
 let rate = parsePlaybackRate(localStorage.getItem(PlaybackRateStorageKey));
@@ -10,6 +11,7 @@ const applyRate = (audio: HTMLAudioElement) => {
 // 先読みしていない音声を鳴らすプレーヤー
 const fallback = new Audio();
 applyRate(fallback);
+traceAudio(fallback);
 
 // 先読みした音声（元の URL → 読み込み済みのプレーヤー）。src を切り替えると端末によっては
 // 読み込みと再生の準備で間が空くので、カードの音声ごとにプレーヤーを用意しておく
@@ -40,6 +42,7 @@ export const preloadAudio = (srcs: string[]) => {
     const audio = new Audio();
     audio.preload = "auto";
     applyRate(audio);
+    traceAudio(audio);
     audio.src = src;
     preloaded.set(src, audio);
   }
@@ -62,7 +65,10 @@ export const keepAudioOutput = (on: boolean) => {
     source.connect(keepAlive.destination);
     source.start();
   }
-  void keepAlive.resume();
+  void keepAlive.resume().then(() => {
+    const latency = Math.round((keepAlive?.outputLatency ?? 0) * 1000);
+    traceNote(`keepAlive ${keepAlive?.state} out=${latency}ms`);
+  });
 };
 
 export const playOne = (src: string): Promise<void> => {
@@ -83,7 +89,11 @@ export const playOne = (src: string): Promise<void> => {
     audio.addEventListener("error", done);
     if (audio === fallback) audio.src = src;
     else audio.currentTime = 0;
-    audio.play().catch(done);
+    tracePlay(audio);
+    audio.play().catch((error) => {
+      traceNote(`play() 失敗 ${error}`);
+      done();
+    });
   });
 };
 
