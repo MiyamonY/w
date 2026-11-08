@@ -11,8 +11,8 @@ const ClientAssets = () => {
   }
   return (
     <>
-      <link rel="stylesheet" href="/assets/app.css" />
-      <script type="module" src="/assets/app.js"></script>
+      <link rel="stylesheet" href={`/assets/app.css?v=${AssetVersion}`} />
+      <script type="module" src={`/assets/app.js?v=${AssetVersion}`}></script>
     </>
   );
 };

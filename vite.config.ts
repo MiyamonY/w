@@ -34,6 +34,8 @@ export default defineConfig(({ command }) => {
   const env = isBuild ? loadEnv() : undefined;
 
   return {
+    // ビルドごとに変わる値。アセットの URL に付けて、インストール済みの PWA でも古い JS・CSS を使わないようにする
+    define: { AssetVersion: JSON.stringify(Date.now().toString(36)) },
     plugins: [
       tailwindcss(),
       cloudflare({
