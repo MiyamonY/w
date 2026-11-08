@@ -1,4 +1,3 @@
-import { traceAudio, traceNote, tracePlay } from "./audio-debug.client";
 import { parsePlaybackRate, PlaybackRateStorageKey } from "./playback-rate";
 
 let rate = parsePlaybackRate(localStorage.getItem(PlaybackRateStorageKey));
@@ -11,9 +10,8 @@ const applyRate = (audio: HTMLAudioElement) => {
 // 先読みしていない音声を鳴らすプレーヤー
 const fallback = new Audio();
 applyRate(fallback);
-traceAudio(fallback);
 
-// Bluetooth のイヤホンは出力の流れを作るたびに 2 秒ほど溜めてから鳴らすので、<audio> ごとに出力すると
+// Bluetooth のイヤホンは出力の流れを作るたびに遅延の分（機種によっては 2 秒ほど）溜めてから鳴らすので、<audio> ごとに出力すると
 // 単語と例文の間がその分空く。先読みした音声は 1 本の AudioContext に通し、出力の流れを使い回す。
 // 完全な無音だとブラウザが出力を止めるので、聞こえない大きさ（-80dB）の一定の値も流しておく
 const KeepAliveLevel = 0.0001;
@@ -30,12 +28,7 @@ const outputContext = () => {
   return output;
 };
 
-const resumeOutput = () => {
-  const context = outputContext();
-  void context.resume().then(() => {
-    traceNote(`output ${context.state} out=${Math.round(context.outputLatency * 1000)}ms`);
-  });
-};
+const resumeOutput = () => void outputContext().resume();
 
 // 先読みした音声（元の URL → 読み込み済みのプレーヤーと、AudioContext への入口）
 type Preloaded = { audio: HTMLAudioElement; node: MediaElementAudioSourceNode };
@@ -67,7 +60,6 @@ export const preloadAudio = (srcs: string[]) => {
     const audio = new Audio();
     audio.preload = "auto";
     applyRate(audio);
-    traceAudio(audio);
     audio.src = src;
     const context = outputContext();
     const node = context.createMediaElementSource(audio);
@@ -105,11 +97,7 @@ export const playOne = (src: string): Promise<void> => {
     audio.addEventListener("error", done);
     if (audio === fallback) audio.src = src;
     else audio.currentTime = 0;
-    tracePlay(audio);
-    audio.play().catch((error) => {
-      traceNote(`play() 失敗 ${error}`);
-      done();
-    });
+    audio.play().catch(done);
   });
 };
 
