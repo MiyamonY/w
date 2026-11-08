@@ -4,6 +4,7 @@ import { DefaultPlaybackRate, formatPlaybackRate, PlaybackRates } from "../../he
 import { Card } from "../card";
 import { CardPosition } from "../card-position";
 import { ElapsedTime } from "../elapsed-time";
+import { OfflineSave } from "../offline-save";
 
 type Props = {
   group: Group;
@@ -72,6 +73,7 @@ export const Deck = (props: Props) => {
         </button>
       </div>
       <ElapsedTime />
+      <OfflineSave />
       <nav class="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 backdrop-blur">
         <div class="mx-auto grid max-w-140 grid-cols-2">
           <button

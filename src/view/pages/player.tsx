@@ -2,7 +2,6 @@ import type { CardFilter, Group, Word } from "../../backend/db";
 import type { Settings } from "../../backend/settings";
 import { Deck } from "../components/deck";
 import { Layout } from "../components/layout";
-import { OfflineSave } from "../components/offline-save";
 import { PageHeader } from "../components/page-header";
 
 type Props = {
@@ -27,7 +26,6 @@ export const Player = (props: Props) => {
         wordIds={wordIds}
         filter={filter}
       />
-      {first && <OfflineSave />}
     </Layout>
   );
 };
