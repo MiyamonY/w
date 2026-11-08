@@ -1,6 +1,7 @@
 import htmx from "htmx.org";
 import {
   currentPlaybackRate,
+  keepAudioOutput,
   playOne,
   preloadAudio,
   setPlaybackRate,
@@ -190,10 +191,13 @@ const setupDeck = (deck: HTMLElement) => {
   }
 
   const playQueue = async (srcs: string[], my: number) => {
+    if (srcs.length > 0) keepAudioOutput(true);
     for (const src of srcs) {
       if (my !== gen) return;
       await playOne(src);
     }
+    // 自動再生中は次のカードまで出力を続け、手で鳴らしたときは鳴らし終えたら止める
+    if (my === gen && !playing) keepAudioOutput(false);
   };
 
   const stop = () => {
@@ -236,7 +240,10 @@ const setupDeck = (deck: HTMLElement) => {
     }
     document.dispatchEvent(new CustomEvent(DeckPlayingEvent, { detail: playing }));
     if (playing) run();
-    else stop();
+    else {
+      stop();
+      keepAudioOutput(false);
+    }
   };
 
   const playCurrentFace = () => {

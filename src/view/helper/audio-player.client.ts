@@ -45,6 +45,26 @@ export const preloadAudio = (srcs: string[]) => {
   }
 };
 
+// Bluetooth のイヤホンは出力が途切れると接続を休ませ、次の音声の前につなぎ直しで 1〜2 秒待たせる。
+// 再生中はほぼ無音（-80dB）の出力を流し続け、単語と例文の間でつなぎ直しが起きないようにする
+const KeepAliveLevel = 0.0001;
+let keepAlive: AudioContext | null = null;
+
+export const keepAudioOutput = (on: boolean) => {
+  if (!on) {
+    void keepAlive?.suspend();
+    return;
+  }
+  if (!keepAlive) {
+    keepAlive = new AudioContext();
+    // 完全な無音だとブラウザが出力を止めるので、聞こえない大きさの一定の値を流す
+    const source = new ConstantSourceNode(keepAlive, { offset: KeepAliveLevel });
+    source.connect(keepAlive.destination);
+    source.start();
+  }
+  void keepAlive.resume();
+};
+
 export const playOne = (src: string): Promise<void> => {
   current.pause();
   finish?.();
