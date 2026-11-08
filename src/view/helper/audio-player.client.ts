@@ -1,39 +1,73 @@
 import { parsePlaybackRate, PlaybackRateStorageKey } from "./playback-rate";
 
-const player = new Audio();
+let rate = parsePlaybackRate(localStorage.getItem(PlaybackRateStorageKey));
+
+const applyRate = (audio: HTMLAudioElement) => {
+  audio.defaultPlaybackRate = rate;
+  audio.playbackRate = rate;
+};
+
+// 先読みしていない音声を鳴らすプレーヤー
+const fallback = new Audio();
+applyRate(fallback);
+
+// 先読みした音声（元の URL → 読み込み済みのプレーヤー）。src を切り替えると端末によっては
+// 読み込みと再生の準備で間が空くので、カードの音声ごとにプレーヤーを用意しておく
+const preloaded = new Map<string, HTMLAudioElement>();
+
+let current = fallback;
 let finish: (() => void) | null = null;
 
-export const setPlaybackRate = (rate: number) => {
-  player.defaultPlaybackRate = rate;
-  player.playbackRate = rate;
+export const setPlaybackRate = (value: number) => {
+  rate = value;
+  for (const audio of [fallback, ...preloaded.values()]) applyRate(audio);
   localStorage.setItem(PlaybackRateStorageKey, String(rate));
 };
 
-export const currentPlaybackRate = () => player.defaultPlaybackRate;
+export const currentPlaybackRate = () => rate;
 
-const initialRate = parsePlaybackRate(localStorage.getItem(PlaybackRateStorageKey));
-player.defaultPlaybackRate = initialRate;
-player.playbackRate = initialRate;
+// srcs を先に読み込み、srcs に無いものは捨てる
+export const preloadAudio = (srcs: string[]) => {
+  for (const [src, audio] of preloaded) {
+    if (srcs.includes(src)) continue;
+    preloaded.delete(src);
+    if (audio === current) continue;
+    audio.removeAttribute("src");
+    audio.load();
+  }
+  for (const src of srcs) {
+    if (preloaded.has(src)) continue;
+    const audio = new Audio();
+    audio.preload = "auto";
+    applyRate(audio);
+    audio.src = src;
+    preloaded.set(src, audio);
+  }
+};
 
 export const playOne = (src: string): Promise<void> => {
+  current.pause();
   finish?.();
+  const audio = preloaded.get(src) ?? fallback;
+  current = audio;
   return new Promise((resolve) => {
     const done = () => {
       if (finish !== done) return;
       finish = null;
-      player.removeEventListener("ended", done);
-      player.removeEventListener("error", done);
+      audio.removeEventListener("ended", done);
+      audio.removeEventListener("error", done);
       resolve();
     };
     finish = done;
-    player.addEventListener("ended", done);
-    player.addEventListener("error", done);
-    player.src = src;
-    player.play().catch(done);
+    audio.addEventListener("ended", done);
+    audio.addEventListener("error", done);
+    if (audio === fallback) audio.src = src;
+    else audio.currentTime = 0;
+    audio.play().catch(done);
   });
 };
 
 export const stopAudio = () => {
-  player.pause();
+  current.pause();
   finish?.();
 };

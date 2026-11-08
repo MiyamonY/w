@@ -2,6 +2,7 @@ import htmx from "htmx.org";
 import {
   currentPlaybackRate,
   playOne,
+  preloadAudio,
   setPlaybackRate,
   stopAudio,
 } from "../../helper/audio-player.client";
@@ -355,11 +356,18 @@ const setupDeck = (deck: HTMLElement) => {
     positionInput.blur();
     jumpTo(Number(positionInput.value));
   });
+  const preloadCard = () => {
+    const c = card();
+    if (c) preloadAudio(frontAudios(c, audioMode));
+  };
+
   syncPosition();
+  preloadCard();
 
   deck.addEventListener("htmx:afterSettle", (e) => {
     if (e.target !== deck) return;
     syncPosition();
+    preloadCard();
     saveProgress();
     if (playing) run();
     else playCurrentFace();
